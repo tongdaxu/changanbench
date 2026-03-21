@@ -1,0 +1,36 @@
+datasets: [dataset_1, dataset_2]
+codecs: [codec_1, codec_2]
+metrics: [metric_1, metric_2]
+
+dataset_1:
+  type: xx
+  params:
+    args1: xx
+    args2: xx
+
+dataset_2:
+  type: xx
+  params:
+    args1: xx
+    args2: xx
+
+codec_1:
+  type: cab.codec.hific.HiFiCImageCodec
+  params:
+    quality: 1
+    ckpt_path: xx.pt
+
+codec_2:
+  type: xx
+  params:
+    args1: xx
+    args2: xx
+
+metric_1:
+  type: xx
+  params:
+    args1: xx
+    args2: xx
+  
+# N dataset, M codec, K quality -> N * M 次
+# 1 dataset, M codec, K quality -> M 次
