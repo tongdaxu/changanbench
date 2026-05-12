@@ -1,29 +1,30 @@
 # changan-video
 
-用 PyAV 把数据库里逐帧取出的图像写成 H.264，也可以直接拿
-[Xiph.org Test Media](https://media.xiph.org/) 的 Y4M/视频源做编码测试。
+Write H.264 from per-frame images retrieved from a database using PyAV, or use
+[Xiph.org Test Media](https://media.xiph.org/) Y4M/video sources as encoding test inputs.
 
-## 安装
+## Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-如果你要在别的数据库项目里直接 import 这个包，推荐开发安装：
+For use as an importable package in another project, a development install is recommended:
 
 ```bash
 pip install -e .
 ```
 
-如果环境里的 FFmpeg 没有 `libx264` 编码器，把配置里的 `codec` 改成机器上可用的 H.264 编码器，例如 `h264_nvenc`、`h264_qsv` 或 `libopenh264`。
+If your FFmpeg build does not include the `libx264` encoder, set `codec` in the config to
+a H.264 encoder available on your machine, such as `h264_nvenc`, `h264_qsv`, or `libopenh264`.
 
-## 直接写裸 H.264
+## Write raw H.264
 
 ```python
 from changan_video import VideoWriteConfig, encode_frames
 
 stats = encode_frames(
-    frames=my_frame_iterable,  # 每帧是 HxWx3 uint8 RGB ndarray
+    frames=my_frame_iterable,  # each frame is an HxWx3 uint8 RGB ndarray
     config=VideoWriteConfig(
         output_path="outputs/video.h264",
         width=1920,
@@ -35,13 +36,13 @@ stats = encode_frames(
 print(stats)
 ```
 
-播放裸 `.h264` 时通常要指定帧率：
+Raw `.h264` files usually require an explicit frame rate when playing back:
 
 ```bash
 ffplay -framerate 30 outputs/video.h264
 ```
 
-## 推荐：写 MP4 容器里的 H.264
+## Recommended: write H.264 inside an MP4 container
 
 ```python
 from changan_video import VideoWriteConfig, encode_frames
@@ -58,15 +59,15 @@ stats = encode_frames(
 )
 ```
 
-## 接你的数据库
+## Connect your database
 
-数据库层只负责产出记录，编码层只负责从记录里取帧：
+The database layer only needs to yield records; the encoding layer pulls frames from them:
 
 ```python
 from changan_video import VideoWriteConfig, encode_records
 
 def query_video_frames(video_id):
-    # 换成你的数据库 cursor/query
+    # replace with your real database cursor/query
     # yield {"frame_rgb": np.ndarray(...)}
     ...
 
@@ -83,27 +84,27 @@ stats = encode_records(
 )
 ```
 
-如果数据库里存的是 OpenCV 风格 BGR 图像，把 `input_format` 改成：
+If your database stores frames in OpenCV-style BGR, set `input_format` to:
 
 ```python
 input_format="bgr24"
 ```
 
-## 用 Xiph 数据集测试
+## Test with the Xiph dataset
 
-仓库里预置了一个较小的 Xiph Derf 样本：
+A small Xiph Derf sample is pre-configured in the package:
 
 ```text
 https://media.xiph.org/video/derf/y4m/bus_qcif_15fps.y4m
 ```
 
-命令行编码前 75 帧：
+Encode the first 75 frames from the command line:
 
 ```bash
 python examples/encode_xiph_url.py --output outputs/xiph-bus.mp4 --limit 75
 ```
 
-也可以在代码里调用：
+Or call it directly from code:
 
 ```python
 from changan_video import XIPH_SAMPLES, transcode_video_source
@@ -116,25 +117,25 @@ stats = transcode_video_source(
 )
 ```
 
-如果你已经把 Xiph 数据集下载到本地，把 `source` 换成本地 `.y4m` 路径即可。
+If you have already downloaded the Xiph dataset locally, pass a local `.y4m` path as `source`.
 
 ## Demo
 
-生成一个测试裸 H.264：
+Generate a test raw H.264 file:
 
 ```bash
 python examples/demo_generate_h264.py
 ```
 
-生成一个模拟数据库调用的 MP4：
+Generate an MP4 simulating a database-driven workflow:
 
 ```bash
 python examples/db_usage_example.py
 ```
 
-## 关键点
+## Key points
 
-- 每帧必须是 `uint8`，形状一般是 `height x width x 3`。
-- `VideoWriteConfig.width/height` 必须和输入帧一致，默认会严格检查。
-- `close()` 或 `with H264Writer(...)` 很重要，因为 H.264 编码器会缓存末尾帧，必须 flush。
-- `output_path` 是 `.h264` 时自动写裸 H.264，是 `.mp4` 时自动写 MP4 容器。
+- Each frame must be `uint8`, typically shaped `height x width x 3`.
+- `VideoWriteConfig.width/height` must match the input frames; strict checking is on by default.
+- Always use `close()` or `with H264Writer(...)` — the H.264 encoder buffers trailing frames that must be flushed.
+- An `output_path` ending in `.h264` writes a raw bitstream; `.mp4` writes an MP4 container.
