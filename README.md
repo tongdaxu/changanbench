@@ -73,11 +73,11 @@ Below is a high-level flow of the evaluation pipeline.
 
 ```mermaid
 flowchart LR
-  A[Config YAML] --> B[instantiate components<br/>(datasets, codecs, metrics)]
-  B --> C[Distributed Setup<br/>(torch.distributed)]
+  A[Config YAML] --> B[instantiate components (datasets, codecs, metrics)]
+  B --> C[Distributed Setup (torch.distributed)]
   C --> D[DistributedSampler + DataLoader]
-  D --> E[Per-rank Inference:<br/>codec(img) -> (rec, bpp)]
-  E --> F[Per-rank Metrics<br/>(psnr, ssim, lpips, dists, fid)]
+  D --> E[Per-rank Inference: codec(img) -> (rec, bpp)]
+  E --> F[Per-rank Metrics (psnr, ssim, lpips, dists, fid)]
   F --> G[All-gather per-batch results]
   G --> H[Rank 0 aggregation & statistics]
   H --> I[Save logs / images / cache]
