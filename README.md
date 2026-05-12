@@ -3,7 +3,7 @@
 A benchmark toolkit for evaluating image codecs with common pixel-level, perceptual and distributional metrics (PSNR, SSIM, MS-SSIM, LPIPS, DISTS, FID). Designed for evaluation using PyTorch DDP.
 
 ## Description
-ChanganBench runs codec inference on datasets, computes metrics, and aggregates results across distributed workers. Components are configurable via YAML and instantiated dynamically using [`cab.utils.instantiate_from_config`](./cab/utils.py).
+ChanganBench runs codec inference on datasets, computes metrics, and aggregates results across distributed workers. Components are configurable via YAML and instantiated dynamically using [`cab.utils.[...]
 
 ## Table of Contents
 - [Usage](#usage)  
@@ -73,12 +73,12 @@ Below is a high-level flow of the evaluation pipeline.
 
 ```mermaid
 flowchart LR
-  A[Config YAML] --> B[instantiate components (datasets, codecs, metrics)]
-  B --> C[Distributed Setup (torch.distributed)]
+  A[Config YAML] --> B["Instantiate: datasets, codecs, metrics"]
+  B --> C[Distributed Setup: torch.distributed]
   C --> D[DistributedSampler + DataLoader]
-  D --> E[Per-rank Inference: codec(img) -> (rec, bpp)]
-  E --> F[Per-rank Metrics (psnr, ssim, lpips, dists, fid)]
+  D --> E["Inference: codec(img) → rec, bpp"]
+  E --> F[Per-rank Metrics: psnr, ssim, lpips, dists, fid]
   F --> G[All-gather per-batch results]
-  G --> H[Rank 0 aggregation & statistics]
-  H --> I[Save logs / images / cache]
+  G --> H[Rank 0 aggregation &amp; statistics]
+  H --> I[Save logs, images, cache]
 ```
