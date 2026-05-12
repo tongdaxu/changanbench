@@ -1,0 +1,47 @@
+datasets: [kodak]
+codecs: [hific_q0]
+metrics: [psnr, ssim, lpips]
+
+# ============ Datasets ============
+kodak:
+  type: cab.dataset.data.SimpleDataset
+  params:
+    root: /NEW_EDS/JJ_Group/lisq/bsq-vit/kodak.txt
+    image_size: 256
+    zero_mean: true
+
+# ============ Codecs ============
+hific_q0:
+  type: cab.codec.hific.HiFiCImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_low.pt
+
+hific_q1:
+  type: cab.codec.hific.HiFiCImageCodec
+  params:
+    quality: 1
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_med.pt
+
+hific_q2:
+  type: cab.codec.hific.HiFiCImageCodec
+  params:
+    quality: 2
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_hi.pt
+
+# ============ Metrics ============
+psnr:
+  type: cab.evaluations.psnr.get_psnr
+  params:
+    zero_mean: false
+
+ssim:
+  type: cab.evaluations.ssim.get_ssim_and_msssim
+  params:
+    zero_mean: false
+
+lpips:
+  type: cab.evaluations.lpips.get_lpips
+  params:
+    network_type: alex
+    zero_mean: false
