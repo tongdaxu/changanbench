@@ -119,6 +119,38 @@ stats = transcode_video_source(
 
 If you have already downloaded the Xiph dataset locally, pass a local `.y4m` path as `source`.
 
+## Scripts
+
+Run the complete smoke test on Windows PowerShell:
+
+```powershell
+.\scripts\run_smoke.ps1 -InstallDeps
+```
+
+Run it without the network-backed Xiph sample:
+
+```powershell
+.\scripts\run_smoke.ps1 -SkipXiph
+```
+
+If PowerShell blocks local scripts because of execution policy, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_smoke.ps1 -SkipXiph
+```
+
+Run the Xiph sample with more frames:
+
+```powershell
+.\scripts\run_smoke.ps1 -XiphLimit 75
+```
+
+On Linux/macOS or GitHub Actions:
+
+```bash
+bash scripts/run_smoke.sh --install-deps --xiph-limit 5
+```
+
 ## Demo
 
 Generate a test raw H.264 file:
@@ -137,5 +169,5 @@ python examples/db_usage_example.py
 
 - Each frame must be `uint8`, typically shaped `height x width x 3`.
 - `VideoWriteConfig.width/height` must match the input frames; strict checking is on by default.
-- Always use `close()` or `with H264Writer(...)` — the H.264 encoder buffers trailing frames that must be flushed.
+- Always use `close()` or `with H264Writer(...)`; the H.264 encoder buffers trailing frames that must be flushed.
 - An `output_path` ending in `.h264` writes a raw bitstream; `.mp4` writes an MP4 container.
