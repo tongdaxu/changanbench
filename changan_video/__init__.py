@@ -5,10 +5,12 @@ from .h264_writer import (
     encode_frames,
     encode_records,
 )
-from .xiph_dataset import (
+from .dataset.xiph_dataset import (
     VideoSourceInfo,
     XiphSample,
     XIPH_SAMPLES,
+    download_sample,
+    download_samples,
     iter_video_frames,
     probe_video_source,
     transcode_video_source,
@@ -23,6 +25,8 @@ __all__ = [
     "VideoSourceInfo",
     "XiphSample",
     "XIPH_SAMPLES",
+    "download_sample",
+    "download_samples",
     "iter_video_frames",
     "probe_video_source",
     "transcode_video_source",
