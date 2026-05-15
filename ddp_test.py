@@ -9,6 +9,18 @@ from tqdm import tqdm
 import torchvision.utils as vutils
 
 
+def _move_to_cuda(module):
+    if hasattr(module, "cuda"):
+        return module.cuda()
+    return module
+
+
+def _flatten_scores(scores):
+    if not isinstance(scores, torch.Tensor):
+        scores = torch.as_tensor(scores, dtype=torch.float32)
+    return scores.reshape(scores.shape[0], -1).mean(dim=1)
+
+
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description="test changan bench with DDP")
     parser.add_argument("--config", type=str, default="")
@@ -78,8 +90,9 @@ def main():
     
     for codec_name in codecs_name:
         codec = instantiate_from_config(config[codec_name])
-        codec = codec.cuda()
-        codec.eval()
+        codec = _move_to_cuda(codec)
+        if hasattr(codec, "eval"):
+            codec.eval()
         codecs.append((codec_name, codec))
     
     for metric_name in metrics_name:
@@ -110,7 +123,9 @@ def main():
                 saved = 0
                 max_save = 3
                 for batch in data_loader:
-                    img = batch["img"].cuda()
+                    img = batch["img"]
+                    if torch.cuda.is_available():
+                        img = img.cuda()
                     rec, bpp = codec(img)
                     if cname =='hific_q0' or cname == 'hific_q2':
                         img = (img + 1.) / 2
@@ -130,7 +145,7 @@ def main():
                     
                     # Handle bpp
                     if isinstance(bpp, torch.Tensor):
-                        bpp_tensor = bpp.cuda()
+                        bpp_tensor = bpp.to(img.device).reshape(-1)
                     else:
                         bpp_tensor = torch.full((img.shape[0],), float(bpp), dtype=torch.float32, device=img.device)
                     
@@ -148,7 +163,7 @@ def main():
                         # Handle tuple outputs (e.g., (ssim, msssim))
                         if isinstance(out, (tuple, list)):
                             if len(out) == 2:
-                                scores0, scores1 = out
+                                scores0, scores1 = [_flatten_scores(score).to(img.device) for score in out]
                                 
                                 # Gather first score
                                 gathered0 = [torch.zeros_like(scores0) for _ in range(world_size)]
@@ -170,6 +185,7 @@ def main():
                             else:
                                 # Handle cases with more than 2 outputs
                                 for i, scores in enumerate(out):
+                                    scores = _flatten_scores(scores).to(img.device)
                                     gathered = [torch.zeros_like(scores) for _ in range(world_size)]
                                     dist.all_gather(gathered, scores)
                                     
@@ -180,6 +196,7 @@ def main():
                                         metric_results[key][j].append(gathered[j].detach().cpu())
                         else:
                             # Single output metric
+                            out = _flatten_scores(out).to(img.device)
                             gathered = [torch.zeros_like(out) for _ in range(world_size)]
                             dist.all_gather(gathered, out)
                             
