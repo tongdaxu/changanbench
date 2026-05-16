@@ -119,9 +119,7 @@ def main():
             with torch.no_grad():
                 max_save = 3
                 for batch in data_loader:
-                    img = batch["img"]
-                    if torch.cuda.is_available():
-                        img = img.cuda()
+                    img = batch["img"].cuda()
                     rec, bpp = codec(img)
                     if cname =='hific_q0' or cname == 'hific_q2':
                         img = (img + 1.) / 2
@@ -137,7 +135,7 @@ def main():
                     
                     # Handle bpp
                     if isinstance(bpp, torch.Tensor):
-                        bpp_tensor = bpp.to(img.device).reshape(-1)
+                        bpp_tensor = bpp.cuda()
                     else:
                         bpp_tensor = torch.full((img.shape[0],), float(bpp), dtype=torch.float32, device=img.device)
                     
@@ -155,7 +153,7 @@ def main():
                         # Handle tuple outputs (e.g., (ssim, msssim))
                         if isinstance(out, (tuple, list)):
                             if len(out) == 2:
-                                scores0, scores1 = [_flatten_scores(score).to(img.device) for score in out]
+                                scores0, scores1 = out
                                 
                                 # Gather first score
                                 gathered0 = [torch.zeros_like(scores0) for _ in range(world_size)]
@@ -177,7 +175,6 @@ def main():
                             else:
                                 # Handle cases with more than 2 outputs
                                 for i, scores in enumerate(out):
-                                    scores = _flatten_scores(scores).to(img.device)
                                     gathered = [torch.zeros_like(scores) for _ in range(world_size)]
                                     dist.all_gather(gathered, scores)
                                     
@@ -188,7 +185,6 @@ def main():
                                         metric_results[key][j].append(gathered[j].detach().cpu())
                         else:
                             # Single output metric
-                            out = _flatten_scores(out).to(img.device)
                             gathered = [torch.zeros_like(out) for _ in range(world_size)]
                             dist.all_gather(gathered, out)
                             
