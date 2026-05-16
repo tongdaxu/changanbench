@@ -1,6 +1,6 @@
-datasets: [kodak]
-codecs: [hific_q0]
-metrics: [psnr, ssim, lpips]
+datasets: [clic2020]
+codecs: [hific_q2,ssdd_q1,hific_q1]
+metrics: [psnr, ssim, lpips, dists, fid]
 
 # ============ Datasets ============
 kodak:
@@ -8,7 +8,15 @@ kodak:
   params:
     root: /NEW_EDS/JJ_Group/lisq/bsq-vit/kodak.txt
     image_size: 256
-    zero_mean: true
+    # bool value must match the value in codecs
+    zero_mean: null
+
+clic2020:
+  type: cab.dataset.data.SimpleDataset
+  params:
+    root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
+    image_size: 256
+    zero_mean: null
 
 # ============ Codecs ============
 hific_q0:
@@ -16,32 +24,165 @@ hific_q0:
   params:
     quality: 0
     ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_low.pt
-
+    dataset_zero_mean: true
+    metrics_zero_mean: false
+    
 hific_q1:
   type: cab.codec.hific.HiFiCImageCodec
   params:
     quality: 1
     ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_med.pt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
 
 hific_q2:
   type: cab.codec.hific.HiFiCImageCodec
   params:
     quality: 2
     ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_hi.pt
+    dataset_zero_mean: true
+    metrics_zero_mean: false
+
+diffeic_q0:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 0
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_16/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm
+
+diffeic_q1:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 1
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_8/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm
+
+diffeic_q2:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 2
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_4/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm
+
+diffeic_q3:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 3
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_2/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm
+
+diffeic_q4:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 4
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_1/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm
+
+cosmos_discrete_q0:
+  type: cab.codec.cosmos.CosmosImageCodec
+  params:
+    quality: 0
+    checkpoint_enc: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI16x16/encoder.jit
+    checkpoint_dec: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI16x16/decoder.jit
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    downsample_factor: 16
+
+cosmos_discrete_q1:
+  type: cab.codec.cosmos.CosmosImageCodec
+  params:
+    quality: 1
+    checkpoint_enc: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI8x8/encoder.jit
+    checkpoint_dec: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI8x8/decoder.jit
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    downsample_factor: 8
+
+ssdd_q0:
+  type: cab.codec.ssdd.SSDDImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/SSDD/weight/models--facebook--SSDD/snapshots/a29742837196f405d5e8af289d66356d14258bb0/F16C4/F16C4_M_256.safetensors
+    encoder_spec: f16c4
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+
+ssdd_q1:
+  type: cab.codec.ssdd.SSDDImageCodec
+  params:
+    quality: 1
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/SSDD/weight/models--facebook--SSDD/snapshots/a29742837196f405d5e8af289d66356d14258bb0/F8C4/F8C4_M_256.safetensors
+    encoder_spec: f8c4
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+
+# For FlowMo, the eval_batch_size should be the same as batch_size in command ?     
+FlowMo_q0:
+  type: cab.codec.flowmo.FlowMoImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/FlowMo/flowmo_lo.pth
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    context_dim: 18
+    codebook_size_for_entropy: 18
+    code_length: 256
+
+FlowMo_q1:
+  type: cab.codec.flowmo.FlowMoImageCodec
+  params:
+    quality: 1
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/FlowMo/flowmo_hi.pth
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    context_dim: 56
+    codebook_size_for_entropy: 14
+    code_length: 1024
 
 # ============ Metrics ============
 psnr:
   type: cab.evaluations.psnr.get_psnr
   params:
-    zero_mean: false
+    # bool value must match the value in codecs
+    zero_mean: null
 
 ssim:
   type: cab.evaluations.ssim.get_ssim_and_msssim
   params:
-    zero_mean: false
+    zero_mean: null
 
 lpips:
   type: cab.evaluations.lpips.get_lpips
   params:
     network_type: alex
-    zero_mean: false
+    zero_mean: null
+
+dists:
+  type: cab.evaluations.dists.get_dists
+  params:
+    zero_mean: null
+
+fid:
+  type: cab.evaluations.fid.get_fid.compute_fid_from_activations
+  params:
+    zero_mean: null
