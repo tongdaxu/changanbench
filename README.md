@@ -26,6 +26,26 @@ CUDAVISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch \
   --num_workers 4
 ```
 
+## Video Evaluation
+Video evaluation uses the same dataset / codec / metric config flow as image
+evaluation. Frame-folder videos are read by
+[`cab.dataset.video_data.SimpleVideoDataset`](./cab/dataset/video_data.py) as
+`(C, T, H, W)` tensors in `[0, 1]`; batches become `(B, C, T, H, W)`.
+
+Traditional H.264/H.265/H.266 baselines are registered through
+[`cab.codec.ffmpeg_video.FFmpegVideoCodec`](./cab/codec/ffmpeg_video.py).
+The wrapper uses [`changan_video.h264_writer`](./changan_video/h264_writer.py)
+when PyAV supports the requested encoder, and falls back to FFmpeg command-line
+encoding otherwise. FFmpeg is resolved from config `ffmpeg_path`,
+`tools/ffmpeg/bin/ffmpeg`, then `PATH`.
+
+H.266 requires an FFmpeg build with `libvvenc` and VVC decode support. Large
+FFmpeg binaries should stay outside git; see [`tools/README.md`](./tools/README.md).
+
+VGGT is exposed as [`cab.evaluations.vggt.VGGTMetric`](./cab/evaluations/vggt.py).
+Its checkpoint path is supplied by config. Place VGGT source under
+`cab/models/vggt` or install it so `import vggt` works.
+
 
 ## Features
 - Distributed evaluation using PyTorch DDP (`torch.distributed`).
