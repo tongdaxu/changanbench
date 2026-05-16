@@ -1,2 +1,9 @@
 av>=12.0.0
+einops
+lpips
 numpy>=1.23
+omegaconf
+Pillow
+pytorch-msssim
+torch
+torchvision

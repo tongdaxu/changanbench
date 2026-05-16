@@ -9,7 +9,7 @@ def instantiate_from_config(config):
     if callable(func_or_class) and not isinstance(func_or_class, type):
         class FunctionWrapper:
             def __call__(self, x, y):
-                return func_or_class(x, y)
+                return func_or_class(x, y, **params)
         return FunctionWrapper()
     
     # 如果是类，进行实例化

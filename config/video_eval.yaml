@@ -1,0 +1,74 @@
+datasets: [co3d_video]
+codecs: [h264_crf28, h265_crf28, h266_qp32]
+metrics: [psnr_video, ssim_video, lpips_video, vggt]
+
+# ============ Datasets ============
+co3d_video:
+  type: cab.dataset.video_data.SimpleVideoDataset
+  params:
+    root: /path/to/frame_folders
+    clip_len: 32
+    image_size: 256
+    zero_mean: false
+    sampling: uniform
+
+# ============ Codecs ============
+h264_crf28:
+  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  params:
+    codec: libx264
+    crf: 28
+    preset: slow
+    fps: 10
+    pix_fmt: yuv420p
+    container_ext: .mp4
+    ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
+
+h265_crf28:
+  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  params:
+    codec: libx265
+    crf: 28
+    preset: slow
+    fps: 10
+    pix_fmt: yuv420p
+    container_ext: .mp4
+    ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
+
+h266_qp32:
+  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  params:
+    codec: libvvenc
+    qp: 32
+    preset: slow
+    fps: 10
+    pix_fmt: yuv420p10le
+    container_ext: .mkv
+    ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
+
+# ============ Metrics ============
+psnr_video:
+  type: cab.evaluations.psnr.get_psnr
+  params:
+    zero_mean: false
+    is_video: true
+
+ssim_video:
+  type: cab.evaluations.ssim.get_ssim_and_msssim
+  params:
+    zero_mean: false
+    is_video: true
+
+lpips_video:
+  type: cab.evaluations.lpips.get_lpips
+  params:
+    zero_mean: false
+    is_video: true
+    network_type: alex
+
+vggt:
+  type: cab.evaluations.vggt.VGGTMetric
+  params:
+    ckpt_path: /path/to/vggt/model.pt
+    device: cuda
+    score: camera_center_error_mean

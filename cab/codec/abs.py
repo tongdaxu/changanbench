@@ -19,6 +19,22 @@ class ImageCodecIface(nn.Module):
         """
         raise NotImplementedError
 
+
+class VideoCodecIface(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    @abstractmethod
+    def forward(self, x, *args, **kwargs):
+        """Implement video encoding/decoding.
+        Args:
+            x: (B, 3, T, H, W)
+        Returns:
+            xhat: (B, 3, T, H, W)
+            bpp:  (B,) tensor, bits per pixel per frame
+        """
+        raise NotImplementedError
+
     # # complexity: to revise
     # total_params = sum(p.numel() for p in model.parameters())
     # trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
