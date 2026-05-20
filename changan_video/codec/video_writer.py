@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Callable, Iterable, Union
+from typing import Any, Callable, Iterable, TypeVar, Union
 
 import av
 import numpy as np
@@ -17,7 +17,7 @@ ProgressCallback = Callable[[int], None]
 
 @dataclass(frozen=True)
 class VideoWriteConfig:
-    """Configuration for writing H.264 with PyAV."""
+    """Configuration for writing encoded video with PyAV."""
 
     output_path: str | Path
     width: int
@@ -28,6 +28,7 @@ class VideoWriteConfig:
     input_format: str = "rgb24"
     pix_fmt: str = "yuv420p"
     crf: int | None = 23
+    qp: int | None = None
     preset: str | None = "veryfast"
     tune: str | None = None
     profile: str | None = None
@@ -35,6 +36,7 @@ class VideoWriteConfig:
     gop_size: int | None = None
     max_b_frames: int | None = None
     strict_size: bool = True
+    codec_options: dict[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -61,21 +63,21 @@ def _as_fraction_fps(fps: FpsLike) -> Fraction:
     return value
 
 
-def _infer_container_format(path: Path) -> str | None:
+def infer_container_format(path: Path) -> str | None:
     suffix = path.suffix.lower()
     if suffix in {".h264", ".264"}:
         return "h264"
+    if suffix in {".h265", ".265", ".hevc"}:
+        return "hevc"
+    if suffix in {".h266", ".266", ".vvc"}:
+        return "vvc"
     if suffix == ".mp4":
         return "mp4"
     return None
 
 
-class H264Writer:
-    """Incremental H.264 writer.
-
-    Frames can arrive from a database cursor, a decoder, or any generator. This
-    object owns the PyAV container and flushes delayed encoder packets on close.
-    """
+class BaseVideoWriter:
+    """Incremental PyAV video writer shared by codec-specific wrappers."""
 
     def __init__(self, config: VideoWriteConfig):
         self.config = config
@@ -84,7 +86,7 @@ class H264Writer:
 
         self.fps = _as_fraction_fps(config.fps)
         self.time_base = Fraction(self.fps.denominator, self.fps.numerator)
-        container_format = config.container_format or _infer_container_format(self.output_path)
+        container_format = config.container_format or infer_container_format(self.output_path)
 
         self.container = av.open(str(self.output_path), mode="w", format=container_format)
         self.stream = self.container.add_stream(config.codec, rate=self.fps)
@@ -100,22 +102,14 @@ class H264Writer:
         if config.max_b_frames is not None:
             self.stream.codec_context.max_b_frames = int(config.max_b_frames)
 
-        options: dict[str, str] = {}
-        if config.crf is not None and config.bit_rate is None:
-            options["crf"] = str(config.crf)
-        if config.preset:
-            options["preset"] = config.preset
-        if config.tune:
-            options["tune"] = config.tune
-        if config.profile:
-            options["profile"] = config.profile
+        options = self._codec_options(config)
         if options:
             self.stream.options = options
 
         self._frames = 0
         self._closed = False
 
-    def __enter__(self) -> H264Writer:
+    def __enter__(self) -> BaseVideoWriter:
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
@@ -133,7 +127,7 @@ class H264Writer:
         """Encode one frame and mux any packets that become available."""
 
         if self._closed:
-            raise RuntimeError("Cannot write to a closed H264Writer")
+            raise RuntimeError(f"Cannot write to a closed {type(self).__name__}")
 
         video_frame = self._to_video_frame(frame)
         video_frame.pts = self._frames
@@ -173,6 +167,22 @@ class H264Writer:
             bytes_written=size,
         )
 
+    def _codec_options(self, config: VideoWriteConfig) -> dict[str, str]:
+        options: dict[str, str] = {}
+        if config.qp is not None:
+            options["qp"] = str(config.qp)
+        elif config.crf is not None and config.bit_rate is None:
+            options["crf"] = str(config.crf)
+        if config.preset:
+            options["preset"] = config.preset
+        if config.tune:
+            options["tune"] = config.tune
+        if config.profile:
+            options["profile"] = config.profile
+        if config.codec_options:
+            options.update(config.codec_options)
+        return options
+
     def _to_video_frame(self, frame: FrameLike) -> av.VideoFrame:
         if isinstance(frame, av.VideoFrame):
             size_mismatch = (
@@ -184,7 +194,7 @@ class H264Writer:
                     f"expected {self.config.width}x{self.config.height}, "
                     f"got {frame.width}x{frame.height}"
                 )
-            # Always reformat to get an owned copy — avoids mutating the caller's frame
+            # Always reformat to get an owned copy; avoids mutating the caller's frame.
             return frame.reformat(
                 width=self.config.width,
                 height=self.config.height,
@@ -229,14 +239,16 @@ class H264Writer:
         return np.ascontiguousarray(array)
 
 
-def encode_frames(
+WriterT = TypeVar("WriterT", bound=BaseVideoWriter)
+
+
+def encode_frames_with_writer(
+    writer_type: type[WriterT],
     frames: Iterable[FrameLike],
     config: VideoWriteConfig,
     progress: ProgressCallback | None = None,
 ) -> VideoWriteStats:
-    """Write an iterable of numpy arrays or PyAV frames to H.264/MP4."""
-
-    with H264Writer(config) as writer:
+    with writer_type(config) as writer:
         for frame in frames:
             writer.write(frame)
             if progress:
@@ -244,19 +256,14 @@ def encode_frames(
     return writer.stats
 
 
-def encode_records(
+def encode_records_with_writer(
+    writer_type: type[WriterT],
     records: Iterable[Any],
     config: VideoWriteConfig,
     frame_getter: FrameGetter,
     progress: ProgressCallback | None = None,
 ) -> VideoWriteStats:
-    """Write frames pulled from database records.
-
-    The database layer stays outside this module. It only needs to yield records;
-    frame_getter extracts the numpy ndarray or av.VideoFrame from each record.
-    """
-
-    with H264Writer(config) as writer:
+    with writer_type(config) as writer:
         for record in records:
             writer.write(frame_getter(record))
             if progress:

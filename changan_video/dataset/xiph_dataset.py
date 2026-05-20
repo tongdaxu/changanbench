@@ -10,7 +10,10 @@ from typing import Iterator
 import av
 import numpy as np
 
-from ..h264_writer import H264Writer, VideoWriteConfig, VideoWriteStats
+from ..codec.video_writer import VideoWriteConfig, VideoWriteStats
+from ..codec.h264_writer import H264Writer
+from ..codec.h265_writer import H265Writer
+from ..codec.h266_writer import H266Writer
 
 
 @dataclass(frozen=True)
@@ -232,7 +235,7 @@ def transcode_video_source(
     crf: int | None = 23,
     preset: str | None = "veryfast",
 ) -> VideoWriteStats:
-    """Decode a video/Y4M source and encode it as H.264."""
+    """Decode a video/Y4M source and encode it with the requested codec."""
 
     container = av.open(str(source), mode="r")
     try:
@@ -251,6 +254,82 @@ def transcode_video_source(
 
         decoded = 0
         with H264Writer(config) as writer:
+            for frame in container.decode(video=0):
+                writer.write(frame)
+                decoded += 1
+                if limit is not None and decoded >= limit:
+                    break
+        return writer.stats
+    finally:
+        container.close()
+
+
+transcode_video_source_h264 = transcode_video_source
+
+
+def transcode_video_source_h265(
+    source: str | Path,
+    output_path: str | Path,
+    limit: int | None = None,
+    crf: int | None = 28,
+    preset: str | None = "veryfast",
+) -> VideoWriteStats:
+    """Decode a video/Y4M source and encode it as H.265/HEVC."""
+
+    container = av.open(str(source), mode="r")
+    try:
+        input_stream = container.streams.video[0]
+        fps = _pick_video_rate(input_stream)
+
+        config = VideoWriteConfig(
+            output_path=output_path,
+            width=input_stream.width,
+            height=input_stream.height,
+            fps=fps,
+            codec="libx265",
+            crf=crf,
+            preset=preset,
+        )
+
+        decoded = 0
+        with H265Writer(config) as writer:
+            for frame in container.decode(video=0):
+                writer.write(frame)
+                decoded += 1
+                if limit is not None and decoded >= limit:
+                    break
+        return writer.stats
+    finally:
+        container.close()
+
+
+def transcode_video_source_h266(
+    source: str | Path,
+    output_path: str | Path,
+    limit: int | None = None,
+    qp: int | None = 32,
+    preset: str | None = "medium",
+) -> VideoWriteStats:
+    """Decode a video/Y4M source and encode it as H.266/VVC."""
+
+    container = av.open(str(source), mode="r")
+    try:
+        input_stream = container.streams.video[0]
+        fps = _pick_video_rate(input_stream)
+
+        config = VideoWriteConfig(
+            output_path=output_path,
+            width=input_stream.width,
+            height=input_stream.height,
+            fps=fps,
+            codec="libvvenc",
+            crf=None,
+            qp=qp,
+            preset=preset,
+        )
+
+        decoded = 0
+        with H266Writer(config) as writer:
             for frame in container.decode(video=0):
                 writer.write(frame)
                 decoded += 1

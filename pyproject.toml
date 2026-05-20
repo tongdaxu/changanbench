@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "changan-video"
 version = "0.1.0"
-description = "PyAV helpers for writing H.264 from frame iterators and Xiph test media."
+description = "PyAV helpers for writing H.264/H.265/H.266 from frame iterators and Xiph test media."
 requires-python = ">=3.9"
 dependencies = [
     "av>=12.0.0",

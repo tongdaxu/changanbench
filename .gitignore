@@ -1,2 +1,4 @@
 cab/models
 __pycache__/
+outputs/
+examples/

@@ -1,4 +1,4 @@
-from .codec.video_writer import (
+from .video_writer import (
     BaseVideoWriter,
     FrameGetter,
     FrameLike,
@@ -7,7 +7,7 @@ from .codec.video_writer import (
     VideoWriteConfig,
     VideoWriteStats,
 )
-from .codec.h264_writer import (
+from .h264_writer import (
     H264Writer,
     H264WriteConfig,
     encode_frames,
@@ -15,30 +15,17 @@ from .codec.h264_writer import (
     encode_records,
     encode_records_h264,
 )
-from .codec.h265_writer import (
+from .h265_writer import (
     H265Writer,
     H265WriteConfig,
     encode_frames_h265,
     encode_records_h265,
 )
-from .codec.h266_writer import (
+from .h266_writer import (
     H266Writer,
     H266WriteConfig,
     encode_frames_h266,
     encode_records_h266,
-)
-from .dataset.xiph_dataset import (
-    VideoSourceInfo,
-    XiphSample,
-    XIPH_SAMPLES,
-    download_sample,
-    download_samples,
-    iter_video_frames,
-    probe_video_source,
-    transcode_video_source,
-    transcode_video_source_h264,
-    transcode_video_source_h265,
-    transcode_video_source_h266,
 )
 
 __all__ = [
@@ -63,15 +50,4 @@ __all__ = [
     "H266WriteConfig",
     "encode_frames_h266",
     "encode_records_h266",
-    "VideoSourceInfo",
-    "XiphSample",
-    "XIPH_SAMPLES",
-    "download_sample",
-    "download_samples",
-    "iter_video_frames",
-    "probe_video_source",
-    "transcode_video_source",
-    "transcode_video_source_h264",
-    "transcode_video_source_h265",
-    "transcode_video_source_h266",
 ]
