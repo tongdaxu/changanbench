@@ -15,6 +15,7 @@ def parse_args(input_args=None):
     parser.add_argument("--config", type=str, default="")
     parser.add_argument("--cache_dir", type=str, default="./cache")
     parser.add_argument('--log_dir', type=str, default="./logs")
+    parser.add_argument('--img_path', type=str, default=None)
     parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=4)
@@ -84,15 +85,15 @@ def main():
         # instantiate metrics (now with injected metrics_zero_mean)
         metrics = []
         for mname in metrics_name:
-            if mname != 'fid':
-                metric = instantiate_from_config(cfg[mname])
-                metrics.append((mname, metric))
+            metric = instantiate_from_config(cfg[mname])
+            metrics.append((mname, metric))
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
     
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
         for dname, dataset in datasets:
+            args.img_path = dataset.root
             cache_file_name = os.path.join(args.cache_dir, cname, dname)
             os.makedirs(cache_file_name, exist_ok=True)
             world_size = dist_utils.get_world_size()
@@ -183,6 +184,9 @@ def main():
                                         metric_results[key] = [[] for _ in range(world_size)]
                                     for j in range(world_size):
                                         metric_results[key][j].append(gathered[j].detach().cpu())
+                        elif out is None:
+                            # FID: accumulate activations internally, no output to gather
+                            pass
                         else:
                             # Single output metric
                             gathered = [torch.zeros_like(out) for _ in range(world_size)]
@@ -191,25 +195,22 @@ def main():
                             for j in range(world_size):
                                 metric_results[mname][j].append(gathered[j].detach().cpu())
                     
-                    # FID: Collect activations (only if fid is in metrics)
-                    if 'fid' in metrics_name:
-                        from cab.evaluations.fid.get_fid import get_fid_batch
-                        pred_x, pred_xr = get_fid_batch(img, rec, metrics_zero_mean=metrics_zero_mean)
-                        
-                        # Gather FID activations from all ranks
-                        gathered_pred_x = [torch.zeros_like(pred_x) for _ in range(world_size)]
-                        gathered_pred_xr = [torch.zeros_like(pred_xr) for _ in range(world_size)]
-                        dist.all_gather(gathered_pred_x, pred_x)
-                        dist.all_gather(gathered_pred_xr, pred_xr)
-                        
-                        for j in range(world_size):
-                            fid_activations_x[j].append(gathered_pred_x[j].detach().cpu())
-                            fid_activations_xr[j].append(gathered_pred_xr[j].detach().cpu())
-                    
                     
                     total_num += world_size * img.shape[0]
             
             dist.barrier()
+
+            # Gather FID activations from all ranks
+            fid_gathered = {}
+            for mname, metric in metrics:
+                if mname == 'fid':
+                    local_x = np.vstack(metric.all_activations_x) if len(metric.all_activations_x) > 0 else np.empty((0,2048), dtype=np.float32)
+                    local_xr = np.vstack(metric.all_activations_xr) if len(metric.all_activations_xr) > 0 else np.empty((0,2048), dtype=np.float32)
+                    gathered_x = [None for _ in range(world_size)]
+                    gathered_xr = [None for _ in range(world_size)]
+                    dist.all_gather_object(gathered_x, local_x)
+                    dist.all_gather_object(gathered_xr, local_xr)
+                    fid_gathered[mname] = (gathered_x, gathered_xr)
             
             # Aggregate and compute statistics on rank 0
             if rank == 0:
@@ -226,6 +227,8 @@ def main():
 
                 # Process metrics
                 for mname in metric_results.keys():
+                    if mname == 'fid':
+                        continue  
                     for j in range(world_size):
                         metric_results[mname][j] = torch.cat(metric_results[mname][j], dim=0).numpy()
                     
@@ -237,27 +240,15 @@ def main():
                     
                     print(f"{mname:12s}: {np.mean(metric_array):.4f} (±{np.std(metric_array):.4f})")
                 
-                # Process FID (if present)
-                if 'fid' in metrics_name:
-                    from cab.evaluations.fid.get_fid import compute_fid_from_activations
-                    
-                    # Reorganize activations
-                    for j in range(world_size):
-                        fid_activations_x[j] = torch.cat(fid_activations_x[j], dim=0).numpy()
-                        fid_activations_xr[j] = torch.cat(fid_activations_xr[j], dim=0).numpy()
-                    
-                    all_pred_x_reorg = []
-                    all_pred_xr_reorg = []
-                    for j in range(total_num):
-                        all_pred_x_reorg.append(fid_activations_x[j % world_size][j // world_size])
-                        all_pred_xr_reorg.append(fid_activations_xr[j % world_size][j // world_size])
-                    
-                    all_pred_x = np.vstack(all_pred_x_reorg)
-                    all_pred_xr = np.vstack(all_pred_xr_reorg)
-                    
-                    # Compute FID from aggregated activations
-                    fid_score = compute_fid_from_activations(all_pred_x, all_pred_xr)
-                    print(f"{'fid':12s}: {fid_score:.4f}")
+                for mname, metric in metrics:
+                    if mname == 'fid':
+                        gathered_x, gathered_xr = fid_gathered.get(mname, ([], []))
+            
+                        all_pred_x = np.vstack(gathered_x)[:total_num]
+                        all_pred_xr = np.vstack(gathered_xr)[:total_num]
+                        from cab.evaluations.fid.get_fid import compute_fid_from_activations
+                        fid_score = compute_fid_from_activations(all_pred_x, all_pred_xr)
+                        print(f"{'fid':12s}: {fid_score:.4f}")
                 
                 print(f"{'='*60}\n")
             
