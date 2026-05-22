@@ -13,7 +13,7 @@ class LPIPSMetric(MetricIface):
         self.name = f"lpips_{network_type}"
 
         # Load the LPIPS model once during init
-        self.loss_fn = lpips_lib.LPIPS(net=network_type, verbose=verbose)
+        self.loss_fn = lpips_lib.LPIPS(net=network_type, verbose=verbose).cuda()
 
     def forward(self, x_input: torch.Tensor, x_recon: torch.Tensor,
                 zero_mean: bool = False, is_video: bool = False, **kwargs) -> torch.Tensor:
@@ -24,9 +24,6 @@ class LPIPSMetric(MetricIface):
             zero_mean: True if range is [-1, 1], False if [0, 1]
             is_video: True if (B, C, T, H, W), False if (B, C, H, W)
         """
-
-        # Move loss function to same device as input
-        self.loss_fn = self.loss_fn.to(x_input.device)
         
         # LPIPS expects [-1, 1] range
         if not zero_mean:

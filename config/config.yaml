@@ -1,5 +1,5 @@
 datasets: [clic2020]
-codecs: [msillm_q0]
+codecs: [perco_q0]
 metrics: [psnr, ssim, lpips, dists, fid]
 
 # ============ Datasets ============
@@ -16,6 +16,13 @@ clic2020:
   params:
     root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
     image_size: 256 #512 for perco
+    zero_mean: null
+
+imagenet_val:
+  type: cab.dataset.data.SimpleDataset
+  params:
+    root: /NEW_EDS/xutd/common_datasets/imagenet/val/
+    image_size: 512 #512 for perco
     zero_mean: null
 
 # ============ Codecs ============

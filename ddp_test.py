@@ -48,6 +48,11 @@ def create_data_loader(dataset, batch_size, num_workers):
     
     return data_loader
 
+def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
+    t = t.detach().cpu()
+    if t.dim() == 0:
+        return t.unsqueeze(0)
+    return t
 
 def main():   
     args = parse_args()
@@ -166,13 +171,13 @@ def main():
                                 
                                 # Accumulate for both metrics
                                 for j in range(world_size):
-                                    metric_results[mname][j].append(gathered0[j].detach().cpu())
+                                    metric_results[mname][j].append(_ensure_1d_cpu(gathered0[j]))
                                 
                                 sec_name = 'msssim' if mname == 'ssim' else f"{mname}_2"
                                 if sec_name not in metric_results:
                                     metric_results[sec_name] = [[] for _ in range(world_size)]
                                 for j in range(world_size):
-                                    metric_results[sec_name][j].append(gathered1[j].detach().cpu())
+                                    metric_results[sec_name][j].append(_ensure_1d_cpu(gathered0[j]))
                             else:
                                 # Handle cases with more than 2 outputs
                                 for i, scores in enumerate(out):
@@ -183,7 +188,7 @@ def main():
                                     if key not in metric_results:
                                         metric_results[key] = [[] for _ in range(world_size)]
                                     for j in range(world_size):
-                                        metric_results[key][j].append(gathered[j].detach().cpu())
+                                        metric_results[key][j].append(_ensure_1d_cpu(gathered0[j]))
                         elif out is None:
                             # FID: accumulate activations internally, no output to gather
                             pass
@@ -193,7 +198,7 @@ def main():
                             dist.all_gather(gathered, out)
                             
                             for j in range(world_size):
-                                metric_results[mname][j].append(gathered[j].detach().cpu())
+                                metric_results[mname][j].append(_ensure_1d_cpu(gathered[j]))
                     
                     
                     total_num += world_size * img.shape[0]

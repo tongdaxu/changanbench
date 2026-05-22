@@ -21,7 +21,7 @@ class FIDMetric(MetricIface):
             [block_idx], 
             normalize_input=normalize_input
         )
-        self.inception.eval()
+        self.inception.eval().cuda()
         
         self.reset()
 
@@ -32,8 +32,6 @@ class FIDMetric(MetricIface):
     @torch.no_grad()
     def forward(self, x_input: torch.Tensor, x_recon: torch.Tensor,
                 zero_mean: bool = False, **kwargs) -> None:
-
-        self.inception = self.inception.to(x_input.device)
         
         if not zero_mean:
             x_input = 2 * x_input - 1

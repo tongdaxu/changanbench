@@ -9,7 +9,7 @@ class DISTSMetric(MetricIface):
     def __init__(self, zero_mean: bool = False, **kwargs):
         super().__init__()
         self.name = "dists"
-        self.model = DISTSModel()
+        self.model = DISTSModel().cuda()
 
     @torch.no_grad()
     def forward(self, x_input: torch.Tensor, x_recon: torch.Tensor,
@@ -20,8 +20,6 @@ class DISTSMetric(MetricIface):
             x_recon: Reconstructed, same range
             zero_mean: True if range is [-1, 1], False if [0, 1]
         """
-        # Move model to same device
-        self.model = self.model.to(x_input.device)
         
         # DISTS expects [0, 1] range
         if zero_mean:
