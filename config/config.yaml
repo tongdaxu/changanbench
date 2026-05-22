@@ -1,5 +1,5 @@
 datasets: [clic2020]
-codecs: [hific_q2,ssdd_q1,hific_q1]
+codecs: [msillm_q0]
 metrics: [psnr, ssim, lpips, dists, fid]
 
 # ============ Datasets ============
@@ -15,7 +15,7 @@ clic2020:
   type: cab.dataset.data.SimpleDataset
   params:
     root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
-    image_size: 256
+    image_size: 256 #512 for perco
     zero_mean: null
 
 # ============ Codecs ============
@@ -41,6 +41,139 @@ hific_q2:
     quality: 2
     ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_hi.pt
     dataset_zero_mean: true
+    metrics_zero_mean: false
+
+msillm_q0:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 0
+    ckpt_name: msillm_quality_vlo1
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q1:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 1
+    ckpt_name: msillm_quality_vlo2
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q2:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 2
+    ckpt_name: msillm_quality_1
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q3:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 3
+    ckpt_name: msillm_quality_2
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q4:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 4
+    ckpt_name: msillm_quality_3
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q5:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 5
+    ckpt_name: msillm_quality_4
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q6:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 6
+    ckpt_name: msillm_quality_5
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+msillm_q7:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 7
+    ckpt_name: msillm_quality_6
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+
+stablecodec_q0: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 0
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/stablecodec_ft32.pkl
+    rec_path: cache/eval_clic/rec_ft32_256/
+    bin_path: cache/eval_clic/bin_ft32_256/
+
+stablecodec_q1: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 1
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/stablecodec_ft16.pkl
+    rec_path: cache/eval_clic/rec_ft16_256/
+    bin_path: cache/eval_clic/bin_ft16_256/
+
+stablecodec_q2: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 2
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/stablecodec_ft8.pkl
+    rec_path: cache/eval_clic/rec_ft8_256/
+    bin_path: cache/eval_clic/bin_ft8_256/
+
+stablecodec_q3: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 3
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/stablecodec_ft4.pkl
+    rec_path: cache/eval_clic/rec_ft4_256/
+    bin_path: cache/eval_clic/bin_ft4_256/
+
+stablecodec_q4: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 4
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec/StableCodec/stablecodec_ft2.pkl
+    rec_path: cache/eval_clic/rec_ft2_256/
+    bin_path: cache/eval_clic/bin_ft2_256/
+
+
+perco_q0: #A100 to be validated
+  type: cab.codec.perco.PerCoImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/lisq/bsq-vit/Perco_0.0019_model/cmvl_2024_full_train
+    dataset_zero_mean: false
     metrics_zero_mean: false
 
 diffeic_q0:
@@ -97,6 +230,15 @@ diffeic_q4:
     metrics_zero_mean: false
     steps: 50
     sampler: ddpm
+
+bsq_q0:
+  type: cab.codec.bsq.BSQImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/bsq-vit/weight/best_ckpt.pth
+    
+    dataset_zero_mean: false
+    metrics_zero_mean: false
 
 cosmos_discrete_q0:
   type: cab.codec.cosmos.CosmosImageCodec
@@ -161,28 +303,17 @@ FlowMo_q1:
 
 # ============ Metrics ============
 psnr:
-  type: cab.evaluations.psnr.get_psnr
-  params:
-    # bool value must match the value in codecs
-    zero_mean: null
+  type: cab.evaluations.psnr.PSNRMetric
 
 ssim:
-  type: cab.evaluations.ssim.get_ssim_and_msssim
-  params:
-    zero_mean: null
+  type: cab.evaluations.ssim.SSIMMetric
 
 lpips:
-  type: cab.evaluations.lpips.get_lpips
-  params:
-    network_type: alex
-    zero_mean: null
+  type: cab.evaluations.lpips.LPIPSMetric
+  network_type: alex
 
 dists:
-  type: cab.evaluations.dists.get_dists
-  params:
-    zero_mean: null
+  type: cab.evaluations.dists.DISTSMetric
 
 fid:
-  type: cab.evaluations.fid.get_fid.compute_fid_from_activations
-  params:
-    zero_mean: null
+  type: cab.evaluations.fid.get_fid.FIDMetric
