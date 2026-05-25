@@ -1,0 +1,46 @@
+# Dedicated config for changan_video pairwise video evaluation.
+#
+# Run example:
+#   python -m changan_video.test --config config/changan_video_eval.yaml --cache_dir ./cache_video
+#
+# Replace the placeholder paths below with real reference/distorted videos.
+
+datasets: [reference_video]
+codecs: [distorted_video]
+metrics: [psnr, ssim, msssim, lpips, vggt]
+
+reference_video:
+  path: /path/to/reference_or_lossless_video.mp4
+
+distorted_video:
+  path: /path/to/compressed_video.mp4
+
+psnr:
+  type: changan_video.evaluations.metrics.PSNRFrameMetric
+  params:
+    zero_mean: false
+
+ssim:
+  type: changan_video.evaluations.metrics.SSIMFrameMetric
+  params:
+    zero_mean: false
+
+msssim:
+  type: changan_video.evaluations.metrics.SSIMFrameMetric
+  params:
+    zero_mean: false
+
+lpips:
+  type: changan_video.evaluations.metrics.LPIPSFrameMetric
+  params:
+    zero_mean: false
+    network_type: alex
+
+vggt:
+  type: changan_video.evaluations.vggt.VGGTVideoMetric
+  params:
+    ckpt_path: /path/to/vggt/model.pt
+    device: cuda
+    frame_count: 32
+    mode: crop
+

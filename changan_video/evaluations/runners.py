@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import Sequence
 
+from changan_video.evaluations.metrics import build_frame_metrics
 from changan_video.evaluations.types import FrameMetricResult, MetricSummary
 
 
@@ -23,26 +24,12 @@ class VideoFrameMetricRunner:
         self.lpips_network = lpips_network
         self.torch = _import_torch()
         self.device = resolve_torch_device(device)
-
-        self._psnr = None
-        self._ssim_and_msssim = None
-        self._lpips_model = None
-
-        if "psnr" in self.metric_names:
-            from changan_video.evaluations.psnr import get_psnr
-
-            self._psnr = get_psnr
-        if "ssim" in self.metric_names or "msssim" in self.metric_names:
-            from changan_video.evaluations.ssim import get_ssim_and_msssim
-
-            self._ssim_and_msssim = get_ssim_and_msssim
-        if "lpips" in self.metric_names:
-            from changan_video.evaluations.lpips import build_lpips_model
-
-            self._lpips_model = build_lpips_model(
-                network_type=self.lpips_network,
-                device=self.device,
-            )
+        self.metrics = build_frame_metrics(
+            self.metric_names,
+            device=self.device,
+            zero_mean=self.zero_mean,
+            lpips_network=self.lpips_network,
+        )
 
     def score(self, reference, distorted) -> dict[str, float]:
         reference_tensor = self._array_to_tensor(reference)
@@ -53,40 +40,8 @@ class VideoFrameMetricRunner:
 
         values: dict[str, float] = {}
         with self.torch.inference_mode():
-            if self._psnr is not None:
-                values["psnr"] = _tensor_scalar(
-                    self._psnr(
-                        reference_tensor,
-                        distorted_tensor,
-                        zero_mean=self.zero_mean,
-                        is_video=False,
-                    )
-                )
-
-            if self._ssim_and_msssim is not None:
-                ssim_value, msssim_value = self._ssim_and_msssim(
-                    reference_tensor,
-                    distorted_tensor,
-                    zero_mean=self.zero_mean,
-                    is_video=False,
-                )
-                if "ssim" in self.metric_names:
-                    values["ssim"] = _tensor_scalar(ssim_value)
-                if "msssim" in self.metric_names:
-                    values["msssim"] = _tensor_scalar(msssim_value)
-
-            if self._lpips_model is not None:
-                from changan_video.evaluations.lpips import get_lpips_with_model
-
-                lpips_value = get_lpips_with_model(
-                    reference_tensor,
-                    distorted_tensor,
-                    zero_mean=self.zero_mean,
-                    network_type=self.lpips_network,
-                    is_video=False,
-                    loss_fn=self._lpips_model,
-                )
-                values["lpips"] = _tensor_scalar(lpips_value)
+            for metric in self.metrics:
+                values.update(metric(reference_tensor, distorted_tensor))
 
         return {name: values[name] for name in self.metric_names}
 

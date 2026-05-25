@@ -42,9 +42,11 @@ encoding otherwise. FFmpeg is resolved from config `ffmpeg_path`,
 H.266 requires an FFmpeg build with `libvvenc` and VVC decode support. Large
 FFmpeg binaries should stay outside git; see [`tools/README.md`](./tools/README.md).
 
-VGGT is exposed as [`cab.evaluations.vggt.VGGTMetric`](./cab/evaluations/vggt.py).
-Its checkpoint path is supplied by config. Place VGGT source under
-`cab/models/vggt` or install it so `import vggt` works.
+VGGT video evaluation is exposed as
+[`changan_video.evaluations.vggt.VGGTVideoMetric`](./changan_video/evaluations/vggt.py)
+and is intended to run through the `changan_video` video-pair evaluation path.
+Its checkpoint path is supplied by config. Install VGGT or add its source root
+to `PYTHONPATH` so `import vggt` works.
 
 
 ## Features

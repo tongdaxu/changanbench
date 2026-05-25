@@ -13,6 +13,7 @@ from changan_video.evaluations.config import (
     normalize_metrics,
     progress_callback,
     str_to_bool,
+    vggt_metric_from_config,
     video_path_from_config,
 )
 from changan_video.evaluations.io import write_frame_metrics_csv, write_summary_json
@@ -23,6 +24,7 @@ from changan_video.evaluations.runners import (
     fid_summary,
     fvd_summary,
     resolve_torch_device,
+    scalar_summary,
     summarize_frame_metrics,
 )
 
@@ -35,6 +37,7 @@ __all__ = [
     "normalize_metrics",
     "progress_callback",
     "str_to_bool",
+    "vggt_metric_from_config",
     "video_path_from_config",
     "write_frame_metrics_csv",
     "write_summary_json",
@@ -53,6 +56,7 @@ def evaluate_video_pair(
     fvd_clip_length: int = 16,
     fvd_clip_stride: int = 16,
     fvd_model_path: str | None = None,
+    vggt_metric=None,
     resize_distorted: bool = False,
     allow_frame_count_mismatch: bool = False,
     progress: Callable[[int], None] | None = None,
@@ -109,7 +113,7 @@ def evaluate_video_pair(
                 distorted_array,
                 frame_runner=frame_runner,
                 fid_runner=fid_runner,
-                keep_fvd_frames="fvd" in video_metric_names,
+                keep_video_frames=bool({"fvd", "vggt"} & set(video_metric_names)),
             )
 
             frame_index += 1
@@ -130,13 +134,19 @@ def evaluate_video_pair(
         )
     if "fvd" in video_metric_names:
         summaries["fvd"] = fvd_summary(
-            state.reference_fvd_frames,
-            state.distorted_fvd_frames,
+            state.reference_video_frames,
+            state.distorted_video_frames,
             device=resolve_torch_device(device),
             clip_length=fvd_clip_length,
             clip_stride=fvd_clip_stride,
             model_path=fvd_model_path,
         )
+    if "vggt" in video_metric_names:
+        if vggt_metric is None:
+            raise ValueError("Metric 'vggt' requires a configured VGGTVideoMetric instance")
+        vggt_values = vggt_metric(state.reference_video_frames, state.distorted_video_frames)
+        for name, value in vggt_values.items():
+            summaries[name] = scalar_summary(name, value, count=len(state.frame_metrics))
 
     return VideoEvaluationResult(
         reference=state.reference,
@@ -144,7 +154,7 @@ def evaluate_video_pair(
         width=state.width,
         height=state.height,
         frames=len(state.frame_metrics),
-        metric_names=metric_names,
+        metric_names=tuple(summaries.keys()),
         metrics=summaries,
         frame_metrics=state.frame_metrics,
         distorted_bytes=_local_file_size(distorted),
@@ -159,8 +169,8 @@ class _EvaluationState:
         self.frame_metrics: list[FrameMetricResult] = []
         self.reference_fid_features = []
         self.distorted_fid_features = []
-        self.reference_fvd_frames = []
-        self.distorted_fvd_frames = []
+        self.reference_video_frames = []
+        self.distorted_video_frames = []
         self.width: int | None = None
         self.height: int | None = None
 
@@ -173,7 +183,7 @@ def _record_frame(
     *,
     frame_runner: VideoFrameMetricRunner | None,
     fid_runner: FidFeatureRunner | None,
-    keep_fvd_frames: bool,
+    keep_video_frames: bool,
 ) -> None:
     if state.width is None or state.height is None:
         state.height, state.width = reference_array.shape[:2]
@@ -183,9 +193,9 @@ def _record_frame(
     if fid_runner is not None:
         state.reference_fid_features.append(fid_runner.extract(reference_array))
         state.distorted_fid_features.append(fid_runner.extract(distorted_array))
-    if keep_fvd_frames:
-        state.reference_fvd_frames.append(reference_array)
-        state.distorted_fvd_frames.append(distorted_array)
+    if keep_video_frames:
+        state.reference_video_frames.append(reference_array)
+        state.distorted_video_frames.append(distorted_array)
 
 
 def _frame_arrays(reference_frame, distorted_frame, *, frame_index: int, resize_distorted: bool):
