@@ -1,0 +1,11 @@
+bsq_q0:
+  type: cab.codec.bsq.BSQImageTokenizer
+  params:
+    quality: 0
+    ckpt_path: cab/models/bsq/BSQ_Vit/checkpoint.pt
+    config_path: cab/models/bsq/BSQ_Vit/config.yaml
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    bits_per_token: 36
+    downsample_factor: 8
+

@@ -1,0 +1,16 @@
+# ============ Metrics ============
+psnr:
+  type: cab.evaluations.psnr.PSNRMetric
+
+ssim:
+  type: cab.evaluations.ssim.SSIMMetric
+
+lpips:
+  type: cab.evaluations.lpips.LPIPSMetric
+  network_type: alex
+
+dists:
+  type: cab.evaluations.dists.DISTSMetric
+
+fid:
+  type: cab.evaluations.fid.get_fid.FIDMetric

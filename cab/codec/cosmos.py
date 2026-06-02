@@ -3,7 +3,7 @@ import numpy as np
 from cab.codec.abs import ImageCodecIface
 from cab.models.cosmos_tokenizer.image_lib import ImageTokenizer
 
-class CosmosImageCodec(ImageCodecIface):
+class CosmosImageTokenizer(ImageCodecIface):
     def __init__(self, quality, checkpoint_enc, checkpoint_dec, downsample_factor, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality

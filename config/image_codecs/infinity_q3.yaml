@@ -1,0 +1,9 @@
+infinity_q3:
+  type: cab.codec.infinity.InfinityImageTokenizer
+  params:
+    quality: 3
+    vqgan_ckpt: /NEW_EDS/JJ_Group/lisq/Infinity/infinity_vae_d64.pth
+    codebook_dim: 64
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    downsample_factor: 16

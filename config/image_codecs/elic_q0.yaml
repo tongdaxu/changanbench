@@ -1,0 +1,8 @@
+elic_q0:
+  type: cab.codec.elic.ELICImageCodec
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/ELiC-ReImplemetation/ELIC_0004_ft_3980_Plateau.pth.tar
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    output_path: ELIC_0450_ft_3980_Plateau

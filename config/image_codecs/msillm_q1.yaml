@@ -1,0 +1,7 @@
+msillm_q1:
+  type: cab.codec.msillm.MSILLMImageCodec
+  params:
+    quality: 1
+    ckpt_name: msillm_quality_vlo2
+    dataset_zero_mean: false
+    metrics_zero_mean: false

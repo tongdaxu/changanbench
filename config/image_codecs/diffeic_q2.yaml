@@ -1,0 +1,10 @@
+diffeic_q2:
+  type: cab.codec.diffeic.DiffEICImageCodec
+  params:
+    quality: 2
+    ckpt_sd: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/1_2_4/lc.ckpt
+    dataset_zero_mean: false
+    metrics_zero_mean: false
+    steps: 50
+    sampler: ddpm

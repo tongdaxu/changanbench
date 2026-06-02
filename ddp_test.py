@@ -12,7 +12,11 @@ import cab.distributed as dist_utils
 
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description="test changan bench with DDP")
-    parser.add_argument("--config", type=str, default="")
+    parser.add_argument("--image_codec_config", type=str, default="config/image_codecs",
+                        help="codec config directory OR a single codec yaml file")
+    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets.yaml")
+    parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
+    # parser.add_argument("--config", type=str, default="")
     parser.add_argument("--cache_dir", type=str, default="./cache")
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
@@ -54,14 +58,120 @@ def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
         return t.unsqueeze(0)
     return t
 
+def load_config_files(dataset_config_path, metric_config_path, codec_config_path):
+    """Load and merge configs.
+    
+    codec_config_path can be:
+    1. Single file: config/codec.yaml (contains one or multiple codecs)
+    2. Directory: config/codecs/ (each file is one codec)
+    """
+    try:
+        if not os.path.exists(dataset_config_path):
+            raise FileNotFoundError(f"Dataset config not found: {dataset_config_path}")
+        if not os.path.exists(metric_config_path):
+            raise FileNotFoundError(f"Metric config not found: {metric_config_path}")
+        if not os.path.exists(codec_config_path):
+            raise FileNotFoundError(f"Codec config not found: {codec_config_path}")
+        
+        dataset_cfg = OmegaConf.load(dataset_config_path)
+        metric_cfg = OmegaConf.load(metric_config_path)
+
+        codec_cfgs = {}
+        codec_names = []
+
+        if os.path.isfile(codec_config_path):
+            raw = OmegaConf.to_container(OmegaConf.load(codec_config_path), resolve=True)
+            
+            if not isinstance(raw, dict):
+                raise ValueError(f"Invalid codec config file: {codec_config_path}")
+            
+            for key, value in raw.items():
+                if isinstance(value, dict) and "type" in value:
+                    codec_cfgs[key] = value
+                    codec_names.append(key)
+            
+            if not codec_names:
+                raise ValueError(
+                    f"No valid codec configs found in {codec_config_path}. "
+                    f"Expected structure: {{codec_name: {{type: ..., params: ...}}}}"
+                )
+
+        elif os.path.isdir(codec_config_path):
+            for root, _, files in os.walk(codec_config_path):
+                for fname in sorted(files):
+                    if fname.endswith((".yaml", ".yml")):
+                        fpath = os.path.join(root, fname)
+                        raw = OmegaConf.to_container(OmegaConf.load(fpath), resolve=True)
+                        
+                        if not isinstance(raw, dict):
+                            continue
+                        
+                        for key, value in raw.items():
+                            if isinstance(value, dict) and "type" in value:
+                                codec_cfgs[key] = value
+                                codec_names.append(key)
+        else:
+            raise FileNotFoundError(f"Codec config path not found: {codec_config_path}")
+
+        if not codec_names:
+            raise ValueError(f"No valid codec configs found in {codec_config_path}")
+
+        def extract_names(cfg, key):
+            if isinstance(cfg, dict) or hasattr(cfg, "get"):
+                if key in cfg and cfg[key] is not None:
+                    return list(cfg[key])
+                return [k for k, v in OmegaConf.to_container(cfg, resolve=True).items() if isinstance(v, dict)]
+            return []
+
+        dataset_names = extract_names(dataset_cfg, "datasets")
+        metric_names = extract_names(metric_cfg, "metrics")
+
+        if not dataset_names:
+            raise ValueError(f"No datasets found in {dataset_config_path}")
+        if not metric_names:
+            raise ValueError(f"No metrics found in {metric_config_path}")
+
+        main_dict = {
+            "datasets": dataset_names,
+            "metrics": metric_names,
+            "codecs": sorted(codec_names),
+        }
+
+        ds_container = OmegaConf.to_container(dataset_cfg, resolve=True)
+        for name in dataset_names:
+            if name in ds_container:
+                main_dict[name] = ds_container[name]
+        for k, v in ds_container.items():
+            if k not in main_dict:
+                main_dict[k] = v
+
+        mt_container = OmegaConf.to_container(metric_cfg, resolve=True)
+        for name in metric_names:
+            if name in mt_container:
+                main_dict[name] = mt_container[name]
+        for k, v in mt_container.items():
+            if k not in main_dict:
+                main_dict[k] = v
+
+        for cname in sorted(codec_names):
+            main_dict[cname] = codec_cfgs[cname]
+
+        return OmegaConf.create(main_dict)
+    
+    except Exception as e:
+        import traceback
+        print(f"Error loading configs: {e}")
+        traceback.print_exc()
+        raise
 def main():   
     args = parse_args()
     dist_utils.init_distributed_mode(args)
     dist_utils.random_seed(args.seed, dist_utils.get_rank())
     
     # Load config
-    config = OmegaConf.load(args.config)
-    
+    # config = OmegaConf.load(args.config)
+    config = load_config_files(args.image_dataset_config, args.image_metric_config, args.image_codec_config)
+
     datasets_name = config['datasets']
     codecs_name = config['codecs']
     metrics_name = config['metrics']
@@ -177,7 +287,7 @@ def main():
                                 if sec_name not in metric_results:
                                     metric_results[sec_name] = [[] for _ in range(world_size)]
                                 for j in range(world_size):
-                                    metric_results[sec_name][j].append(_ensure_1d_cpu(gathered0[j]))
+                                    metric_results[sec_name][j].append(_ensure_1d_cpu(gathered1[j]))
                             else:
                                 # Handle cases with more than 2 outputs
                                 for i, scores in enumerate(out):
@@ -188,7 +298,7 @@ def main():
                                     if key not in metric_results:
                                         metric_results[key] = [[] for _ in range(world_size)]
                                     for j in range(world_size):
-                                        metric_results[key][j].append(_ensure_1d_cpu(gathered0[j]))
+                                        metric_results[key][j].append(_ensure_1d_cpu(gathered[j]))
                         elif out is None:
                             # FID: accumulate activations internally, no output to gather
                             pass

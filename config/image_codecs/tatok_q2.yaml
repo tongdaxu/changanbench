@@ -1,0 +1,10 @@
+tatok_q2:
+  type: cab.codec.tatok.TaTokImageTokenizer
+  params:
+    quality: 2
+    ckpt_name: ar_dtok_lp_256px.pth #image_size: 256
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    codebook_size: 65536
+    scale: 0
+    seq_length: 729

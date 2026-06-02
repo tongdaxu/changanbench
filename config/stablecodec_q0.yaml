@@ -1,0 +1,11 @@
+stablecodec_q0: # only support one GPU but can set large batch size
+  type: cab.codec.stablecodec.StableCodecImageCodec
+  params:
+    quality: 0
+    dataset_zero_mean: true
+    metrics_zero_mean: true 
+    sd_path: /NEW_EDS/lisq/StableCodec/sd-turbo
+    elic_path: /NEW_EDS/lisq/StableCodec/StableCodec/elic_official.pth
+    codec_path: /NEW_EDS/lisq/StableCodec/StableCodec/stablecodec_ft32.pkl
+    rec_path: cache/eval_clic/rec_ft32_256/
+    bin_path: cache/eval_clic/bin_ft32_256/

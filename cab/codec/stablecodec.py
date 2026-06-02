@@ -12,7 +12,7 @@ def compress_one_image(net, bin_path, ori_h, ori_w, img_name, x):
     with torch.no_grad():
         output_dict = net.compress(x)
     shape = output_dict["shape"]
-    if not os.path.exists(bin_path): os.makedirs(bin_path)
+    os.makedirs(bin_path, exist_ok=True)
     output = os.path.join(bin_path, img_name)
     with Path(output).open("wb") as f:
         write_body(f, shape, output_dict["strings"])
@@ -39,8 +39,8 @@ class StableCodecImageCodec(ImageCodecIface):
         self.codec_path = codec_path
         self.rec_path = rec_path
         self.bin_path = bin_path
-        if not os.path.exists(self.rec_path): os.makedirs(self.rec_path)
-        if not os.path.exists(self.bin_path): os.makedirs(self.bin_path)
+        os.makedirs(self.rec_path, exist_ok=True)
+        os.makedirs(self.bin_path, exist_ok=True)
         args_ns = SimpleNamespace(
             elic_path=self.elic_path,
             codec_path=self.codec_path,
@@ -60,9 +60,10 @@ class StableCodecImageCodec(ImageCodecIface):
 
         batch = x.cuda()
         for i in range(batch.shape[0]):
+            rank = int(os.environ.get("RANK", os.environ.get("LOCAL_RANK", 0)))
             img_i = batch[i].unsqueeze(0)  # shape (1,C,H,W)
             ori_h, ori_w = img_i.shape[2:]
-            fname = f"img_{i}"
+            fname = f"{i}_r{rank}"
 
             try:
                 rate = compress_one_image(self.model, self.bin_path, ori_h, ori_w, fname, img_i)

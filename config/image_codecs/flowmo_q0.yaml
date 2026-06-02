@@ -1,0 +1,10 @@
+FlowMo_q0:
+  type: cab.codec.flowmo.FlowMoImageTokenizer
+  params:
+    quality: 0
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/FlowMo/flowmo_lo.pth
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    context_dim: 18
+    codebook_size_for_entropy: 18
+    code_length: 256

@@ -1,0 +1,6 @@
+var_q0:
+  type: cab.codec.var.VARImageTokenizer
+  params:
+    quality: 0
+    dataset_zero_mean: true
+    metrics_zero_mean: true

@@ -1,0 +1,9 @@
+cosmos_discrete_q0:
+  type: cab.codec.cosmos.CosmosImageTokenizer
+  params:
+    quality: 0
+    checkpoint_enc: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI16x16/encoder.jit
+    checkpoint_dec: /NEW_EDS/JJ_Group/lisq/Cosmos-Tokenizer/pretrained_ckpts/Cosmos-0.1-Tokenizer-DI16x16/decoder.jit
+    dataset_zero_mean: true
+    metrics_zero_mean: true
+    downsample_factor: 16

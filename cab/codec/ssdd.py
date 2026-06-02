@@ -5,7 +5,7 @@ from cab.codec.abs import ImageCodecIface
 from cab.models.ssdd import SSDD
 import re
 
-class SSDDImageCodec(ImageCodecIface):
+class SSDDImageTokenizer(ImageCodecIface):
     def __init__(self, quality, ckpt_path, encoder_spec, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality

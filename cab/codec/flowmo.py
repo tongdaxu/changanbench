@@ -4,7 +4,7 @@ from cab.codec.abs import ImageCodecIface
 from cab.models.flowmo import train_utils
 from omegaconf import OmegaConf
 
-class FlowMoImageCodec(ImageCodecIface):
+class FlowMoImageTokenizer(ImageCodecIface):
     def __init__(self, quality, ckpt_path, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality
