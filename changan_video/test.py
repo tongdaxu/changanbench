@@ -11,6 +11,7 @@ from changan_video.evaluations.video import (
     normalize_metrics,
     progress_callback,
     str_to_bool,
+    vggt_metric_from_config,
     video_path_from_config,
     write_frame_metrics_csv,
     write_summary_json,
@@ -69,6 +70,11 @@ def run_config(args: argparse.Namespace) -> None:
         metrics_name,
         base_dir=config_dir,
     )
+    vggt_metric = vggt_metric_from_config(
+        config,
+        metrics_name,
+        base_dir=config_dir,
+    )
     metric_names = normalize_metrics(metric_names)
     check_dependencies(metric_names)
 
@@ -95,6 +101,7 @@ def run_config(args: argparse.Namespace) -> None:
                 fvd_clip_length,
                 fvd_clip_stride,
                 fvd_model_path,
+                vggt_metric,
             )
             cache_file_name = Path(args.cache_dir) / str(codec_name) / str(dataset_name)
             _save_outputs(result, cache_file_name)
@@ -110,6 +117,7 @@ def _evaluate(
     fvd_clip_length: int,
     fvd_clip_stride: int,
     fvd_model_path: str | None,
+    vggt_metric,
 ):
     return evaluate_video_pair(
         reference=reference,
@@ -122,6 +130,7 @@ def _evaluate(
         fvd_clip_length=fvd_clip_length,
         fvd_clip_stride=fvd_clip_stride,
         fvd_model_path=fvd_model_path,
+        vggt_metric=vggt_metric,
         resize_distorted=False,
         allow_frame_count_mismatch=False,
         progress=progress_callback(100),

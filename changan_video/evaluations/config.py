@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import importlib
 import re
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -8,7 +9,8 @@ from typing import Any, Iterable, Sequence
 
 DEFAULT_METRICS = ("psnr", "ssim", "msssim", "lpips")
 FRAME_METRICS = ("psnr", "ssim", "msssim", "lpips")
-VIDEO_METRICS = ("fid", "fvd")
+VIDEO_METRICS = ("fid", "fvd", "vggt")
+ALL_METRICS = (*FRAME_METRICS, "fid", "fvd")
 SUPPORTED_METRICS = (*FRAME_METRICS, *VIDEO_METRICS)
 
 
@@ -20,7 +22,7 @@ def normalize_metrics(metrics: Iterable[str]) -> tuple[str, ...]:
             if not part:
                 continue
             if part == "all":
-                candidates = SUPPORTED_METRICS
+                candidates = ALL_METRICS
             else:
                 candidates = (_normalize_metric_name(part),)
 
@@ -133,6 +135,32 @@ def fvd_options_from_config(
     return clip_length, clip_stride, model_path
 
 
+def vggt_metric_from_config(
+    config: Any,
+    metrics_name: Sequence[str],
+    *,
+    base_dir: Path,
+):
+    for metric_name in metrics_name:
+        entry = _to_plain_container(config.get(metric_name, {}))
+        if not isinstance(entry, dict):
+            continue
+
+        metric_type = str(entry.get("type", ""))
+        if "vggt" not in _metric_names_from_entry(str(metric_name), metric_type):
+            continue
+
+        class_path = metric_type or "changan_video.evaluations.vggt.VGGTVideoMetric"
+        params = dict(entry.get("params", {}) or {})
+        ckpt_path = params.get("ckpt_path")
+        if ckpt_path not in (None, ""):
+            params["ckpt_path"] = _resolve_source(str(ckpt_path), base_dir)
+        module_name, class_name = class_path.rsplit(".", 1)
+        cls = getattr(importlib.import_module(module_name), class_name)
+        return cls(**params)
+    return None
+
+
 def video_path_from_config(
     entry: Any,
     *,
@@ -205,7 +233,7 @@ def _normalize_metric_names(metrics: Sequence[str]) -> set[str]:
             if not name:
                 continue
             if name == "all":
-                names.update(SUPPORTED_METRICS)
+                names.update(ALL_METRICS)
             elif name in {"ms-ssim", "ms_ssim"}:
                 names.add("msssim")
             else:
@@ -216,12 +244,12 @@ def _normalize_metric_names(metrics: Sequence[str]) -> set[str]:
 def _metric_names_from_entry(metric_name: str, metric_type: str) -> list[str]:
     text = f"{metric_name} {metric_type}".lower()
     if "all" == metric_name.lower():
-        return list(SUPPORTED_METRICS)
+        return list(ALL_METRICS)
     if "get_ssim_and_msssim" in text:
         return ["ssim", "msssim"]
     if "ms-ssim" in text or "ms_ssim" in text or "msssim" in text:
         return ["msssim"]
-    for name in ("ssim", "lpips", "fid", "fvd", "psnr"):
+    for name in ("ssim", "lpips", "fid", "fvd", "vggt", "psnr"):
         if name in text:
             return [name]
     return [metric_name]
