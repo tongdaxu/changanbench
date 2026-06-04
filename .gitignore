@@ -5,6 +5,8 @@ Record.md
 __pycache__/
 cache
 .vscode
-CLIC_2020.txt
+*.txt
 
-cab/models
+
+TAppEncoderStatic_HMOriginal
+EncoderAppStatic_VTMOriginal
