@@ -1,0 +1,29 @@
+{
+  "parameters": {
+    "decoder": 88796352,
+    "decoder_M": 88.796352
+  },
+  "flops": {
+    "encode_fvcore": 87240474624,
+    "encode_fvcore_G": 87.240474624,
+    "decode_fvcore": 90109378560,
+    "decode_fvcore_G": 90.10937856,
+    "total_fvcore": 177349853184,
+    "total_fvcore_G": 177.349853184
+  },
+  "latency_ms": {
+    "encode_mean": 30.385985374450684,
+    "encode_std": 0.1414410853738485,
+    "encode_cv": 0.004654813185448835,
+    "encode_min": 30.03406524658203,
+    "encode_max": 30.779123306274414,
+    "decode_mean": 30.29672145843506,
+    "decode_std": 0.16761941594572144,
+    "decode_cv": 0.005532592567010372,
+    "decode_min": 29.677629470825195,
+    "decode_max": 30.731678009033203,
+    "total_mean": 60.68270683288574,
+    "total_std": 0.21932133784408,
+    "total_cv": 0.00361423129077069
+  }
+}
