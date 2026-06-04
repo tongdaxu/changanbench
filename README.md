@@ -1,30 +1,107 @@
-# ChanganBench
+## Image & Video Codec Evaluation
 
-A benchmark toolkit for evaluating image codecs with common pixel-level, perceptual and distributional metrics (PSNR, SSIM, MS-SSIM, LPIPS, DISTS, FID). Designed for evaluation using PyTorch DDP.
+ChanganBench is a configurable benchmark toolkit for large-scale image and video codec evaluation. It provides a unified framework for evaluating traditional codecs, learned codecs, generative codecs and tokenizer-based codecs using distributed execution and configurable benchmarking pipelines.
 
-## Description
-ChanganBench runs codec inference on datasets, computes metrics, and aggregates results across distributed workers. Components are configurable via YAML and instantiated dynamically using [`cab.utils.[...]
+## Image Codec Evaluation
 
-## Table of Contents
-- [Usage](#usage)  
-- [Features](#features)  
-- [Configuration](#configuration)  
-- [Flow](#flow)  
+### Supported Image Codecs
 
-## Usage
-1. Install requirements and activate your environment .
-2. Prepare a config (e.g. [`config/config.yaml`](./config/config.yaml)).
-3. Run distributed evaluation :
-```bash
-# single-node multi-GPU
-CUDAVISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch \
-  --nproc_per_node=8 \
-  ddp_test.py \
-  --config config/config.yaml \
-  --cache_dir ./cache \
-  --batch_size 32 \
-  --num_workers 4
+<table>
+<tr>
+<th width="22%">Perceptual Image Codec</th>
+<th width="28%"></th>
+<th width="20%">Image Tokenizer</th>
+<th width="20%"></th>
+<!-- <th width="10%">Datasets</th> -->
+<!-- <th width="15%">Metrics</th> -->
+</tr>
+
+<tr>
+<td><b>Traditional</b></td>
+<td>JPEG, HM, VTM</td>
+<td rowspan="2"><b>GAN-based</b></td>
+<td rowspan="2">
+FSQ, BSQ, VAR, TA-Tok<br>
+Infinity, Cosmos, IBQ
+<!-- </td>
+<td rowspan="4">Imagenet CLIC2020 Kodak</td>
+<td rowspan="4"> -->
+<!-- PSNR<br>
+SSIM<br>
+LPIPS<br>
+DISTS<br>
+FID<br>
+... -->
+</td>
+</tr>
+
+<tr>
+<td><b>Learning-based</b></td>
+<td>ELIC, TCM, MLIC++</td>
+</tr>
+
+<tr>
+<td><b>GAN-based</b></td>
+<td>HiFiC, MS-ILLM</td>
+<td rowspan="2"><b>Diffusion-based</b></td>
+<td rowspan="2">
+FlowMo, SSDD
+</td>
+</tr>
+
+<tr>
+<td><b>Diffusion-based</b></td>
+<td>PerCo, DiffEIC, StableCodec</td>
+</tr>
+
+</table>
+
+### Supported Metrics
+
+| Category | Metrics |
+|-----------|----------|
+| Pixel Fidelity | PSNR, SSIM, MS-SSIM |
+| Perceptual Quality | LPIPS, DISTS |
+| Distribution Quality | FID |
+| Compression Efficiency | BPP |
+
+### Supported Datasets
+
+| Dataset | Description |
+|----------|-------------|
+| Imagenet/ CLIC2020/ Kodak | Built-in benchmark dataset |
+| Custom Dataset | Any image directory or dataset implementation |
+
+---
+
+New codecs can be integrated by implementing a codec class and registering it through the configuration system.
+
+```python
+reconstruction, bpp = codec(image)
 ```
+
+---
+
+
+### Evaluation Pipeline
+
+#### Image Evaluation
+
+```text
+Dataset
+    ↓
+Codec Inference
+    ↓
+Reconstruction + BPP
+    ↓
+Metric Evaluation
+    ↓
+Distributed Aggregation
+    ↓
+Final Benchmark Results
+```
+
+---
 
 ## Video Evaluation
 Video evaluation uses the same dataset / codec / metric config flow as image
@@ -48,59 +125,20 @@ and is intended to run through the `changan_video` video-pair evaluation path.
 Its checkpoint path is supplied by config. Install VGGT or add its source root
 to `PYTHONPATH` so `import vggt` works.
 
+### Configuration-Driven Benchmarking
 
-## Features
-- Distributed evaluation using PyTorch DDP (`torch.distributed`).
-- Modular config-driven instantiation: codecs, datasets, metrics via [`cab.utils.instantiate_from_config`](./cab/utils.py).
-- Metrics :
-  - PSNR: [`cab/evaluations/psnr.py`](./cab/evaluations/psnr.py)
-  - SSIM / MS-SSIM: [`cab/evaluations/ssim.py`](./cab/evaluations/ssim.py)
-  - LPIPS: [`cab/evaluations/lpips.py`](./cab/evaluations/lpips.py)
-  - DISTS: [`cab/evaluations/dists.py`](./cab/evaluations/dists.py)
-  - FID: [`cab/evaluations/fid/get_fid.py`](./cab/evaluations/fid/get_fid.py) + [`cab/evaluations/fid/fid_score.py`](./cab/evaluations/fid/fid_score.py)
-- Codecs :
-  - HiFiC: [`cab/codec/hific.py`](./cab/codec/hific.py)
-  - SSDD: [`cab/codec/ssdd.py`](./cab/codec/ssdd.py)
-  - ...
-  -  More codecs can be added by implementing a new class with a `forward` method that takes an image and returns (reconstruction, bpp).
-  
-  
-## Configuration
-- [`config/config.yaml`](./config/config.yaml)
+Each benchmark experiment is defined by three configurable components:
 
+- Dataset
+- Codec
+- Metric
 
-Config structure:
-- `datasets`: list of dataset keys 
-- `codecs`: list of codec keys
-- `metrics`: list of metric keys
+All components are configured through YAML files, enabling arbitrary combinations of datasets, codecs, and evaluation criteria without modifying benchmark code.
 
-Each dataset/codec/metric key maps to a `type` string (module path + callable/class) and optional `params`. Example entry:
-```yaml
-kodak:
-  type: cab.dataset.data.SimpleDataset
-  params:
-    root: /path/to/list.txt
-    image_size: 256
-    zero_mean: false
-```
+The framework supports:
 
-Important runtime args :
-- `--config`: path to YAML config
-- `--cache_dir`: directory to save visualizations / cache
-- `--batch_size`, `--num_workers`, `--image_size`
-- `--zero-mean`: affect metric preprocessing/visualization
-
-## Flow
-Below is a high-level flow of the evaluation pipeline.
-
-```mermaid
-flowchart LR
-  A[Config YAML] --> B["Instantiate: datasets, codecs, metrics"]
-  B --> C[Distributed Setup: torch.distributed]
-  C --> D[DistributedSampler + DataLoader]
-  D --> E["Inference: codec(img) → rec, bpp"]
-  E --> F[Per-rank Metrics: psnr, ssim, lpips, dists, fid]
-  F --> G[All-gather per-batch results]
-  G --> H[Rank 0 aggregation &amp; statistics]
-  H --> I[Save logs, images, cache]
-```
+- PyTorch Distributed Data Parallel (DDP)
+- Extensible codec registration
+- Extensible metric registration
+- Extensible dataset registration
+- Unified image and video benchmarking workflows
