@@ -205,6 +205,20 @@ def main():
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
     
+    if dist_utils.get_rank() == 0 and hasattr(codec, "complexity"):
+        complexity = codec.complexity(
+            image_size=args.image_size,
+            batch_size=1,
+            steps=1,
+            warmup=10,
+            repeat=50,
+        )
+
+        print(f"\nComplexity: {cname}")
+        for k, v in complexity.items():
+            if "info" not in k:
+                print(f"{k}: {v}")
+
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
         for dname, dataset in datasets:
