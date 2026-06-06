@@ -5,8 +5,12 @@ from pathlib import Path
 
 import numpy as np
 
-from changan_video.evaluations.config import fvd_options_from_config, str_to_bool
-from changan_video.utils import inject_codec_zero_means, instantiate_from_config
+from cab.evaluations.video_config import (
+    fvd_options_from_config,
+    inject_codec_zero_means,
+    instantiate_from_config,
+    str_to_bool,
+)
 
 try:
     from tqdm import tqdm
@@ -301,14 +305,14 @@ def _print_results(
             print(f"{metric_name:12s}: nan (+/-nan)")
 
     if any(fid_reference):
-        from changan_video.evaluations.fid.fid_score import compute_fid_score
+        from cab.evaluations.fid.video_fid_score import compute_fid_score
 
         pred_x = _concat_rank_chunks(fid_reference, axis=0)
         pred_xr = _concat_rank_chunks(fid_distorted, axis=0)
         print(f"{'fid':12s}: {compute_fid_score(pred_xr, pred_x):.4f}")
 
     if any(fvd_reference):
-        from changan_video.evaluations.fvd.fvd_score import compute_fvd_score
+        from cab.evaluations.fvd.video_fvd_score import compute_fvd_score
 
         pred_x = _concat_rank_chunks(fvd_reference, axis=0)
         pred_xr = _concat_rank_chunks(fvd_distorted, axis=0)
@@ -331,7 +335,7 @@ def _concat_rank_chunks(rank_chunks, axis=None) -> np.ndarray:
 
 class _BatchFidRunner:
     def __init__(self, *, device, metrics_zero_mean: bool) -> None:
-        from changan_video.evaluations.fid.inception import InceptionV3
+        from cab.evaluations.fid.inception import InceptionV3
 
         self.device = device
         self.metrics_zero_mean = metrics_zero_mean
@@ -362,7 +366,7 @@ class _BatchFvdRunner:
         clip_stride: int,
         model_path: str | None,
     ) -> None:
-        from changan_video.evaluations.fvd.fvd_score import get_i3d_model
+        from cab.evaluations.fvd.video_fvd_score import get_i3d_model
 
         self.device = device
         self.metrics_zero_mean = metrics_zero_mean
@@ -374,7 +378,7 @@ class _BatchFvdRunner:
         return self._extract_one(x_input), self._extract_one(x_recon)
 
     def _extract_one(self, video: torch.Tensor) -> torch.Tensor:
-        from changan_video.evaluations.fvd.fvd_score import extract_i3d_features
+        from cab.evaluations.fvd.video_fvd_score import extract_i3d_features
 
         if self.metrics_zero_mean:
             video = (video + 1.0) * 0.5
@@ -451,7 +455,7 @@ def _ensure_runtime_imports() -> None:
     if torch is None:
         import torch as torch_module
         import torch.distributed as dist_module
-        import changan_video.distributed as dist_utils_module
+        import cab.distributed as dist_utils_module
         from omegaconf import OmegaConf as omega_conf_module
 
         torch = torch_module

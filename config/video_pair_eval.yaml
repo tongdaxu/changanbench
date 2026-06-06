@@ -1,7 +1,7 @@
-# Dedicated config for changan_video pairwise video evaluation.
+# Dedicated config for CAB pairwise video evaluation.
 #
 # Run example:
-#   python -m changan_video.test --config config/changan_video_eval.yaml --cache_dir ./cache_video
+#   python video_pair_test.py --config config/video_pair_eval.yaml --cache_dir ./cache_video
 #
 # Replace the placeholder paths below with real reference/distorted videos.
 
@@ -16,28 +16,28 @@ distorted_video:
   path: /path/to/compressed_video.mp4
 
 psnr:
-  type: changan_video.evaluations.metrics.PSNRFrameMetric
+  type: cab.evaluations.video_metrics.PSNRFrameMetric
   params:
     zero_mean: false
 
 ssim:
-  type: changan_video.evaluations.metrics.SSIMFrameMetric
+  type: cab.evaluations.video_metrics.SSIMFrameMetric
   params:
     zero_mean: false
 
 msssim:
-  type: changan_video.evaluations.metrics.SSIMFrameMetric
+  type: cab.evaluations.video_metrics.SSIMFrameMetric
   params:
     zero_mean: false
 
 lpips:
-  type: changan_video.evaluations.metrics.LPIPSFrameMetric
+  type: cab.evaluations.video_metrics.LPIPSFrameMetric
   params:
     zero_mean: false
     network_type: alex
 
 vggt:
-  type: changan_video.evaluations.vggt.VGGTVideoMetric
+  type: cab.evaluations.video_vggt.VGGTVideoMetric
   params:
     ckpt_path: /path/to/vggt/model.pt
     device: cuda

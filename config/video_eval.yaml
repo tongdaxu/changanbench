@@ -1,20 +1,22 @@
-datasets: [co3d_video]
+datasets: [xiph_video]
 codecs: [h264_crf28, h265_crf28, h266_qp32]
 metrics: [psnr_video, ssim_video, lpips_video, vggt]
 
 # ============ Datasets ============
-co3d_video:
-  type: cab.dataset.video_data.SimpleVideoDataset
+xiph_video:
+  type: cab.dataset.xiph_dataset.XiphVideoDataset
   params:
-    root: /path/to/frame_folders
+    samples: [bus_cif]
+    root: ./cache/xiph
     clip_len: 32
     image_size: 256
     zero_mean: false
     sampling: uniform
+    download: true
 
 # ============ Codecs ============
 h264_crf28:
-  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
   params:
     codec: libx264
     crf: 28
@@ -25,7 +27,7 @@ h264_crf28:
     ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
 
 h265_crf28:
-  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
   params:
     codec: libx265
     crf: 28
@@ -36,7 +38,7 @@ h265_crf28:
     ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
 
 h266_qp32:
-  type: cab.codec.ffmpeg_video.FFmpegVideoCodec
+  type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
   params:
     codec: libvvenc
     qp: 32
@@ -67,7 +69,7 @@ lpips_video:
     network_type: alex
 
 vggt:
-  type: cab.evaluations.vggt.VGGTMetric
+  type: cab.evaluations.video_vggt.VGGTMetric
   params:
     ckpt_path: /path/to/vggt/model.pt
     device: cuda

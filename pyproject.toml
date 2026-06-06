@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "changan-video"
+name = "cab"
 version = "0.1.0"
-description = "PyAV helpers for writing H.264/H.265/H.266 from frame iterators and Xiph test media."
+description = "Compression benchmark toolkit with image and video evaluation helpers."
 requires-python = ">=3.9"
 dependencies = [
     "av>=12.0.0",
@@ -14,4 +14,4 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["changan_video*"]
+include = ["cab*"]

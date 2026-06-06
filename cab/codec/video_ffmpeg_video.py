@@ -9,15 +9,15 @@ import numpy as np
 import torch
 from PIL import Image
 
-from changan_video.codec.abs import VideoCodecIface
+from cab.codec.abs import VideoCodecIface
 
 
 class FFmpegVideoCodec(VideoCodecIface):
     """FFmpeg-backed H.264/H.265/H.266 baseline video codec.
 
     Input and output tensors use shape (B, C, T, H, W) and range [0, 1].
-    Encoding first tries the package's PyAV writers when requested, then falls
-    back to the configured FFmpeg binary for codecs such as libx265/libvvenc.
+    Encoding first tries CAB's PyAV writers when requested, then falls back to
+    the configured FFmpeg binary for codecs such as libx265/libvvenc.
     """
 
     def __init__(
@@ -82,7 +82,7 @@ class FFmpegVideoCodec(VideoCodecIface):
     def _process_one(self, video: torch.Tensor) -> tuple[torch.Tensor, float]:
         frames = self._tensor_to_frames(video)
         _, height, width, _ = frames.shape
-        with tempfile.TemporaryDirectory(prefix="changan_ffmpeg_") as tmp:
+        with tempfile.TemporaryDirectory(prefix="cab_ffmpeg_") as tmp:
             tmp_dir = Path(tmp)
             output_path = tmp_dir / f"encoded{self.container_ext}"
             try:
@@ -95,7 +95,7 @@ class FFmpegVideoCodec(VideoCodecIface):
                 )
             except Exception:
                 if self.keep_temp:
-                    self._persist_temp(tmp_dir, prefix="changan_ffmpeg_failed_")
+                    self._persist_temp(tmp_dir, prefix="cab_ffmpeg_failed_")
                 raise
 
             bpp = float(bytes_written * 8.0 / (frames.shape[0] * height * width))
@@ -103,7 +103,7 @@ class FFmpegVideoCodec(VideoCodecIface):
             self._decode_with_ffmpeg(output_path, decoded_dir)
             rec = self._read_decoded_frames(decoded_dir, frames.shape[0], height, width)
             if self.keep_temp:
-                self._persist_temp(tmp_dir, prefix="changan_ffmpeg_keep_")
+                self._persist_temp(tmp_dir, prefix="cab_ffmpeg_keep_")
             return rec, bpp
 
     def _encode_with_selected_backend(
@@ -129,10 +129,10 @@ class FFmpegVideoCodec(VideoCodecIface):
         width: int,
         height: int,
     ) -> int:
-        from changan_video.codec.h264_writer import H264Writer
-        from changan_video.codec.h265_writer import H265Writer
-        from changan_video.codec.h266_writer import H266Writer
-        from changan_video.codec.video_writer import VideoWriteConfig
+        from cab.codec.h264_writer import H264Writer
+        from cab.codec.h265_writer import H265Writer
+        from cab.codec.h266_writer import H266Writer
+        from cab.codec.video_writer import VideoWriteConfig
 
         writer_type = H264Writer
         if self.codec == "libx265":

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Sequence
 
-from changan_video.evaluations.config import (
+from cab.evaluations.video_config import (
     DEFAULT_METRICS,
     FRAME_METRICS,
     VIDEO_METRICS,
@@ -16,9 +16,9 @@ from changan_video.evaluations.config import (
     vggt_metric_from_config,
     video_path_from_config,
 )
-from changan_video.evaluations.io import write_frame_metrics_csv, write_summary_json
-from changan_video.evaluations.types import FrameMetricResult, VideoEvaluationResult
-from changan_video.evaluations.runners import (
+from cab.evaluations.video_io import write_frame_metrics_csv, write_summary_json
+from cab.evaluations.video_types import FrameMetricResult, VideoEvaluationResult
+from cab.evaluations.video_runners import (
     FidFeatureRunner,
     VideoFrameMetricRunner,
     fid_summary,

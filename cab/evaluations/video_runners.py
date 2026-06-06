@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 from typing import Sequence
 
-from changan_video.evaluations.metrics import build_frame_metrics
-from changan_video.evaluations.types import FrameMetricResult, MetricSummary
+from cab.evaluations.video_metrics import build_frame_metrics
+from cab.evaluations.video_types import FrameMetricResult, MetricSummary
 
 
 class VideoFrameMetricRunner:
@@ -60,7 +60,7 @@ class FidFeatureRunner:
         self.torch = _import_torch()
         self.device = resolve_torch_device(device)
 
-        from changan_video.evaluations.fid.inception import InceptionV3
+        from cab.evaluations.fid.inception import InceptionV3
 
         block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
         self.model = InceptionV3([block_idx]).to(self.device)
@@ -80,7 +80,7 @@ class FidFeatureRunner:
 def fid_summary(reference_features, distorted_features) -> MetricSummary:
     import numpy as np
 
-    from changan_video.evaluations.fid.fid_score import compute_fid_score
+    from cab.evaluations.fid.video_fid_score import compute_fid_score
 
     reference = np.concatenate(reference_features, axis=0)
     distorted = np.concatenate(distorted_features, axis=0)
@@ -97,7 +97,7 @@ def fvd_summary(
     clip_stride: int,
     model_path: str | None,
 ) -> MetricSummary:
-    from changan_video.evaluations.fvd.fvd_score import (
+    from cab.evaluations.fvd.video_fvd_score import (
         compute_fvd_score,
         extract_i3d_features,
         get_i3d_model,

@@ -5,7 +5,7 @@ from typing import Sequence
 
 
 class VideoFrameMetric(ABC):
-    """Base class for frame-wise metrics used by changan_video evaluation."""
+    """Base class for frame-wise metrics used by cab evaluation."""
 
     names: tuple[str, ...]
 
@@ -21,7 +21,7 @@ class PSNRFrameMetric(VideoFrameMetric):
         self.zero_mean = zero_mean
 
     def __call__(self, reference, distorted) -> dict[str, float]:
-        from changan_video.evaluations.psnr import get_psnr
+        from cab.evaluations.psnr import get_psnr
 
         value = get_psnr(
             reference,
@@ -51,7 +51,7 @@ class SSIMFrameMetric(VideoFrameMetric):
         self.zero_mean = zero_mean
 
     def __call__(self, reference, distorted) -> dict[str, float]:
-        from changan_video.evaluations.ssim import get_ssim_and_msssim
+        from cab.evaluations.ssim import get_ssim_and_msssim
 
         ssim_value, msssim_value = get_ssim_and_msssim(
             reference,
@@ -81,12 +81,12 @@ class LPIPSFrameMetric(VideoFrameMetric):
             raise ValueError("lpips network_type must be 'alex' or 'vgg'")
         self.zero_mean = zero_mean
         self.network_type = network_type
-        from changan_video.evaluations.lpips import build_lpips_model
+        from cab.evaluations.video_lpips import build_lpips_model
 
         self.loss_fn = build_lpips_model(network_type=network_type, device=device)
 
     def __call__(self, reference, distorted) -> dict[str, float]:
-        from changan_video.evaluations.lpips import get_lpips_with_model
+        from cab.evaluations.video_lpips import get_lpips_with_model
 
         value = get_lpips_with_model(
             reference,

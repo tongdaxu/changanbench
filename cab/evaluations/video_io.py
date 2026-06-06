@@ -4,7 +4,7 @@ import csv
 import json
 from pathlib import Path
 
-from changan_video.evaluations.types import VideoEvaluationResult
+from cab.evaluations.video_types import VideoEvaluationResult
 
 
 def write_frame_metrics_csv(result: VideoEvaluationResult, output_path: str | Path) -> None:

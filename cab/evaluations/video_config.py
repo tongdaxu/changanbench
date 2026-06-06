@@ -14,6 +14,56 @@ ALL_METRICS = (*FRAME_METRICS, "fid", "fvd")
 SUPPORTED_METRICS = (*FRAME_METRICS, *VIDEO_METRICS)
 
 
+def instantiate_from_config(config):
+    """Instantiate video benchmark config entries."""
+
+    target = _get_obj_from_str(config["type"])
+    params = config.get("params", {})
+
+    if callable(target) and not isinstance(target, type):
+        class FunctionWrapper:
+            def __init__(self, func, params):
+                self.func = func
+                self.params = params
+
+            def __call__(self, x, y, **kwargs):
+                call_params = dict(self.params)
+                call_params.update(kwargs)
+                return self.func(x, y, **call_params)
+
+        return FunctionWrapper(target, params)
+
+    return target(**params)
+
+
+def inject_codec_zero_means(cfg: dict[str, Any], codec_name: str) -> dict[str, Any]:
+    codec_def = cfg.get(codec_name)
+    if not codec_def:
+        raise KeyError(f"codec '{codec_name}' not found in config")
+
+    codec_params = codec_def.get("params", {})
+    dataset_z = codec_params.get("dataset_zero_mean")
+    metrics_z = codec_params.get("metrics_zero_mean")
+
+    for dataset_name in cfg.get("datasets", []):
+        dataset_def = cfg.get(dataset_name)
+        if not dataset_def:
+            continue
+        dataset_params = dataset_def.setdefault("params", {})
+        if dataset_z is not None:
+            dataset_params["zero_mean"] = dataset_z
+
+    for metric_name in cfg.get("metrics", []):
+        metric_def = cfg.get(metric_name)
+        if not metric_def:
+            continue
+        metric_params = metric_def.setdefault("params", {})
+        if metrics_z is not None:
+            metric_params["zero_mean"] = metrics_z
+
+    return cfg
+
+
 def normalize_metrics(metrics: Iterable[str]) -> tuple[str, ...]:
     normalized: list[str] = []
     for metric in metrics:
@@ -150,7 +200,7 @@ def vggt_metric_from_config(
         if "vggt" not in _metric_names_from_entry(str(metric_name), metric_type):
             continue
 
-        class_path = metric_type or "changan_video.evaluations.vggt.VGGTVideoMetric"
+        class_path = metric_type or "cab.evaluations.video_vggt.VGGTVideoMetric"
         params = dict(entry.get("params", {}) or {})
         ckpt_path = params.get("ckpt_path")
         if ckpt_path not in (None, ""):
@@ -276,7 +326,7 @@ def _resolve_source(source: str, base_dir: Path) -> str:
 
 
 def _resolve_xiph_sample(sample_name: str) -> str:
-    from changan_video.dataset.xiph_dataset import XIPH_SAMPLES
+    from cab.dataset.xiph_dataset import XIPH_SAMPLES
 
     if sample_name in XIPH_SAMPLES:
         return XIPH_SAMPLES[sample_name].url
@@ -291,6 +341,12 @@ def _normalize_metric_name(metric: str) -> str:
         "msssim": "msssim",
     }
     return aliases.get(metric, metric)
+
+
+def _get_obj_from_str(string: str):
+    module, name = string.rsplit(".", 1)
+    importlib.invalidate_caches()
+    return getattr(importlib.import_module(module), name)
 
 
 def _first_param(params: dict[str, Any], keys: Sequence[str]) -> Any:

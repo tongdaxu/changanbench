@@ -5,10 +5,12 @@ import warnings
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Sequence
 
 import av
 import numpy as np
+import torch
+from PIL import Image
 
 from ..codec.video_writer import VideoWriteConfig, VideoWriteStats
 from ..codec.h264_writer import H264Writer
@@ -227,6 +229,95 @@ def download_samples(
     return {key: download_sample(key, dest_dir, overwrite=overwrite) for key in keys}
 
 
+class XiphVideoDataset(torch.utils.data.Dataset):
+    """Torch dataset for Xiph Y4M samples.
+
+    Each item returns a sampled clip as a `(C, T, H, W)` tensor in `[0, 1]`.
+    Samples are downloaded into `root` on first use by default.
+    """
+
+    def __init__(
+        self,
+        samples: Sequence[str] | str | None = None,
+        root: str | Path = "./cache/xiph",
+        clip_len: int = 32,
+        image_size: int | None = None,
+        zero_mean: bool = False,
+        sampling: str = "uniform",
+        download: bool = True,
+        overwrite: bool = False,
+        limit: int | None = None,
+    ) -> None:
+        if clip_len <= 0:
+            raise ValueError("clip_len must be greater than 0")
+        if sampling not in {"uniform", "first", "center"}:
+            raise ValueError("sampling must be one of: uniform, first, center")
+
+        if samples is None:
+            sample_names = ["bus_cif"]
+        elif isinstance(samples, str):
+            sample_names = [samples]
+        else:
+            sample_names = list(samples)
+
+        self.root = Path(root)
+        self.clip_len = int(clip_len)
+        self.image_size = image_size
+        self.zero_mean = bool(zero_mean)
+        self.sampling = sampling
+        self.limit = limit
+        self.items = [
+            (name, self._resolve_sample(name, download=download, overwrite=overwrite))
+            for name in sample_names
+        ]
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, index: int):
+        name, path = self.items[index]
+        frames = list(iter_video_frames(path, limit=self.limit, ndarray_format="rgb24"))
+        frame_arrays = self._sample_frames(frames)
+        tensors = [self._frame_to_tensor(frame) for frame in frame_arrays]
+        video = torch.stack(tensors, dim=1)
+        if self.zero_mean:
+            video = video * 2.0 - 1.0
+        return {"img": video, "fpath": str(path), "sample": name}
+
+    def _resolve_sample(self, name: str, *, download: bool, overwrite: bool) -> Path:
+        if name not in XIPH_SAMPLES:
+            path = Path(name)
+            if not path.exists():
+                known = ", ".join(sorted(XIPH_SAMPLES))
+                raise ValueError(f"Unknown Xiph sample or missing file {name!r}. Known samples: {known}")
+            return path
+        if download:
+            return download_sample(name, self.root, overwrite=overwrite)
+        sample = XIPH_SAMPLES[name]
+        return self.root / sample.url.rsplit("/", 1)[-1]
+
+    def _sample_frames(self, frames: list[np.ndarray]) -> list[np.ndarray]:
+        if len(frames) < self.clip_len:
+            raise ValueError(f"Need {self.clip_len} frames, found {len(frames)}")
+        if self.sampling == "first":
+            return frames[: self.clip_len]
+        if self.sampling == "center":
+            start = max(0, (len(frames) - self.clip_len) // 2)
+            return frames[start : start + self.clip_len]
+        if self.clip_len == 1:
+            return [frames[len(frames) // 2]]
+        idxs = np.linspace(0, len(frames) - 1, self.clip_len)
+        return [frames[int(round(i))] for i in idxs]
+
+    def _frame_to_tensor(self, frame: np.ndarray) -> torch.Tensor:
+        if self.image_size is not None:
+            image = Image.fromarray(frame, mode="RGB")
+            frame = np.asarray(_resize_and_center_crop(image, int(self.image_size)), dtype=np.float32)
+        else:
+            frame = frame.astype(np.float32)
+        return torch.from_numpy(frame / 255.0).permute(2, 0, 1).contiguous()
+
+
 def transcode_video_source(
     source: str | Path,
     output_path: str | Path,
@@ -262,6 +353,18 @@ def transcode_video_source(
         return writer.stats
     finally:
         container.close()
+
+
+def _resize_and_center_crop(img: Image.Image, image_size: int) -> Image.Image:
+    width, height = img.size
+    short = min(width, height)
+    scale = image_size / short
+    new_width = max(image_size, int(round(width * scale)))
+    new_height = max(image_size, int(round(height * scale)))
+    img = img.resize((new_width, new_height), Image.BICUBIC)
+    left = (new_width - image_size) // 2
+    top = (new_height - image_size) // 2
+    return img.crop((left, top, left + image_size, top + image_size))
 
 
 transcode_video_source_h264 = transcode_video_source

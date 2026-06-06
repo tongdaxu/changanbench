@@ -4,7 +4,7 @@ import scipy
 import torch
 from typing import Callable, Tuple
 
-from changan_video.evaluations.fvd.utils import open_url
+from cab.evaluations.fvd.utils import open_url
 
 
 def get_i3d_model(model_path=None, device="cpu"):
