@@ -104,26 +104,38 @@ Final Benchmark Results
 ---
 
 ## Video Evaluation
-Video evaluation uses the same dataset / codec / metric config flow as image
-evaluation. Frame-folder videos are read by
-[`cab.dataset.video_data.SimpleVideoDataset`](./cab/dataset/video_data.py) as
-`(C, T, H, W)` tensors in `[0, 1]`; batches become `(B, C, T, H, W)`.
 
-Traditional H.264/H.265/H.266 baselines are registered through
-[`cab.codec.ffmpeg_video.FFmpegVideoCodec`](./cab/codec/ffmpeg_video.py).
-The wrapper uses [`changan_video.h264_writer`](./changan_video/h264_writer.py)
-when PyAV supports the requested encoder, and falls back to FFmpeg command-line
-encoding otherwise. FFmpeg is resolved from config `ffmpeg_path`,
-`tools/ffmpeg/bin/ffmpeg`, then `PATH`.
+### Supported Video Codecs
 
-H.266 requires an FFmpeg build with `libvvenc` and VVC decode support. Large
-FFmpeg binaries should stay outside git; see [`tools/README.md`](./tools/README.md).
+<table>
 
-VGGT video evaluation is exposed as
-[`changan_video.evaluations.vggt.VGGTVideoMetric`](./changan_video/evaluations/vggt.py)
-and is intended to run through the `changan_video` video-pair evaluation path.
-Its checkpoint path is supplied by config. Install VGGT or add its source root
-to `PYTHONPATH` so `import vggt` works.
+
+<tr>
+<td><b>Traditional</b></td>
+<td>
+H.264, H.265, H.266
+</td>
+<td rowspan="2"><b>Neural Codec</b></td>
+<td rowspan="2">
+DCVC, DCVC-TCM, DCVC-HEM<br>
+DCVC-DC, DCVC-FM, DCVC-RT
+</td>
+</tr>
+
+
+
+</table>
+
+### Supported Video Metrics
+
+| Category | Metrics |
+|-----------|----------|
+| Pixel Fidelity | PSNR, SSIM, MS-SSIM |
+| Perceptual Quality | LPIPS, DISTS |
+| Distribution Quality | FID, FVD |
+| 3D/Geometry Sensitivity | VGGT camera center error, camera rotation error, depth AbsRel, point L2 |
+| Compression Efficiency | BPP  |
+
 
 ### Configuration-Driven Benchmarking
 
