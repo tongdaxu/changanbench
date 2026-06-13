@@ -6,9 +6,14 @@ from cab.utils import instantiate_from_config
 import argparse
 import numpy as np
 from tqdm import tqdm
-import torchvision.utils as vutils
 from cab.utils import inject_codec_zero_means
 import cab.distributed as dist_utils
+from cab.evaluations.video_ddp import (
+    adapt_metric_for_video,
+    gather_dataset_metric,
+    print_dataset_metric,
+    save_reconstruction_preview,
+)
 
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description="test changan bench with DDP")
@@ -16,7 +21,7 @@ def parse_args(input_args=None):
                         help="codec config directory OR a single codec yaml file")
     parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
-    # parser.add_argument("--config", type=str, default="")
+    parser.add_argument("--config", type=str, default="", help="video benchmark config yaml")
     parser.add_argument("--cache_dir", type=str, default="./cache")
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
@@ -163,14 +168,20 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         print(f"Error loading configs: {e}")
         traceback.print_exc()
         raise
+
+
 def main():   
     args = parse_args()
+    is_video_benchmark = bool(args.config)
+
     dist_utils.init_distributed_mode(args)
     dist_utils.random_seed(args.seed, dist_utils.get_rank())
     
     # Load config
-    # config = OmegaConf.load(args.config)
-    config = load_config_files(args.image_dataset_config, args.image_metric_config, args.image_codec_config)
+    if is_video_benchmark:
+        config = OmegaConf.load(args.config)
+    else:
+        config = load_config_files(args.image_dataset_config, args.image_metric_config, args.image_codec_config)
 
     datasets_name = config['datasets']
     codecs_name = config['codecs']
@@ -201,6 +212,8 @@ def main():
         metrics = []
         for mname in metrics_name:
             metric = instantiate_from_config(cfg[mname])
+            if is_video_benchmark:
+                metric = adapt_metric_for_video(str(mname), metric)
             metrics.append((mname, metric))
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
@@ -222,7 +235,7 @@ def main():
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
         for dname, dataset in datasets:
-            args.img_path = dataset.root
+            args.img_path = getattr(dataset, "root", None)
             cache_file_name = os.path.join(args.cache_dir, cname, dname)
             os.makedirs(cache_file_name, exist_ok=True)
             world_size = dist_utils.get_world_size()
@@ -231,10 +244,6 @@ def main():
             metric_results = {mname: [[] for _ in range(world_size)] for mname, _ in metrics}
             bpp_results = [[] for _ in range(world_size)]
             
-            # FID-specific storage: collect activations per rank
-            fid_activations_x = [[] for _ in range(world_size)]  # Original images
-            fid_activations_xr = [[] for _ in range(world_size)]  # Reconstructed images
-
             total_num = 0
             
             # Create dataloader - each rank gets different data subset via DistributedSampler
@@ -255,12 +264,10 @@ def main():
                         img = (img + 1.) / 2
                     for i in range(min(img.shape[0], max_save)):
                         if dataset_zero_mean:
-                            x_vis = img[i] * 0.5 + 0.5
                             x_recon_vis = rec[i] * 0.5 + 0.5
                         else:
-                            x_vis = img[i]
                             x_recon_vis = rec[i]
-                        vutils.save_image(x_recon_vis, os.path.join(cache_file_name, f'recon_{i}.png'))
+                        save_reconstruction_preview(x_recon_vis, os.path.join(cache_file_name, f'recon_{i}.png'))
 
                     
                     # Handle bpp
@@ -331,6 +338,7 @@ def main():
 
             # Gather FID activations from all ranks
             fid_gathered = {}
+            dataset_metric_gathered = {}
             for mname, metric in metrics:
                 if mname == 'fid':
                     local_x = np.vstack(metric.all_activations_x) if len(metric.all_activations_x) > 0 else np.empty((0,2048), dtype=np.float32)
@@ -340,6 +348,9 @@ def main():
                     dist.all_gather_object(gathered_x, local_x)
                     dist.all_gather_object(gathered_xr, local_xr)
                     fid_gathered[mname] = (gathered_x, gathered_xr)
+                gathered = gather_dataset_metric(metric, world_size)
+                if gathered is not None:
+                    dataset_metric_gathered[mname] = gathered
             
             # Aggregate and compute statistics on rank 0
             if rank == 0:
@@ -356,8 +367,10 @@ def main():
 
                 # Process metrics
                 for mname in metric_results.keys():
-                    if mname == 'fid':
+                    if mname == 'fid' or mname in dataset_metric_gathered:
                         continue  
+                    if not any(metric_results[mname]):
+                        continue
                     for j in range(world_size):
                         metric_results[mname][j] = torch.cat(metric_results[mname][j], dim=0).numpy()
                     
@@ -373,11 +386,13 @@ def main():
                     if mname == 'fid':
                         gathered_x, gathered_xr = fid_gathered.get(mname, ([], []))
             
-                        all_pred_x = np.vstack(gathered_x)[:total_num]
-                        all_pred_xr = np.vstack(gathered_xr)[:total_num]
+                        all_pred_x = np.vstack(gathered_x)
+                        all_pred_xr = np.vstack(gathered_xr)
                         from cab.evaluations.fid.get_fid import compute_fid_from_activations
                         fid_score = compute_fid_from_activations(all_pred_x, all_pred_xr)
                         print(f"{'fid':12s}: {fid_score:.4f}")
+                    elif mname in dataset_metric_gathered:
+                        print_dataset_metric(mname, metric, dataset_metric_gathered[mname])
                 
                 print(f"{'='*60}\n")
             
