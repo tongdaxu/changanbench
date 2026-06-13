@@ -1,6 +1,6 @@
 datasets: [xiph_video]
 codecs: [dcvc_rt_q0]
-metrics: [psnr_video, ssim_video, lpips_video]
+metrics: [psnr, ssim, lpips]
 
 xiph_video:
   type: cab.dataset.xiph_dataset.XiphVideoDataset
@@ -87,21 +87,30 @@ dcvc_rt_q0:
     dataset_zero_mean: false
     metrics_zero_mean: false
 
-psnr_video:
-  type: cab.evaluations.psnr.get_psnr
+psnr:
+  type: cab.evaluations.psnr.PSNRMetric
   params:
     zero_mean: false
-    is_video: true
 
-ssim_video:
-  type: cab.evaluations.ssim.get_ssim_and_msssim
+ssim:
+  type: cab.evaluations.ssim.SSIMMetric
   params:
     zero_mean: false
-    is_video: true
 
-lpips_video:
-  type: cab.evaluations.lpips.get_lpips
+lpips:
+  type: cab.evaluations.lpips.LPIPSMetric
   params:
     zero_mean: false
-    is_video: true
     network_type: alex
+
+fid:
+  type: cab.evaluations.fid.get_fid.FIDMetric
+  params:
+    zero_mean: false
+
+fvd:
+  type: cab.evaluations.video_ddp.FVDMetric
+  params:
+    clip_length: 16
+    clip_stride: 16
+    device: cuda
