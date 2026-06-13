@@ -19,6 +19,23 @@ class ImageCodecIface(nn.Module):
         """
         raise NotImplementedError
 
+    def fake_input(self, *args, **kwargs):
+        raise torch.randn([1,3,256,256])
+
+    def flops(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    def param_count(self, x, *args, **kwargs):
+        total_params = sum(p.numel() for p in self.parameters())
+        return total_params
+
+    @abstractmethod
+    def encode_time(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def decode_time(self, x, *args, **kwargs):
+        raise NotImplementedError
 
 class VideoCodecIface(nn.Module):
     def __init__(self, *args, **kwargs):
@@ -33,6 +50,24 @@ class VideoCodecIface(nn.Module):
             xhat: (B, 3, T, H, W)
             bpp:  (B,) tensor, bits per pixel per frame
         """
+        raise NotImplementedError
+
+    def fake_input(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def flops(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    def param_count(self, x, *args, **kwargs):
+        total_params = sum(p.numel() for p in self.parameters())
+        return total_params
+
+    @abstractmethod
+    def encode_time(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def decode_time(self, x, *args, **kwargs):
         raise NotImplementedError
 
     # # complexity: to revise
