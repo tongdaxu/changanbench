@@ -37,6 +37,7 @@ def parse_args(input_args=None):
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--dist-url', default='env://', type=str,
                         help='url used to set up distributed training')
+    parser.add_argument('--profile', action='store_true', help='test complexity and latency')
     if input_args is not None:
         args = parser.parse_args(input_args)
     else:

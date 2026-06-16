@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from cab.utils.complexity import count_params, safe_flops
 
 import torch
 import torch.nn as nn
@@ -20,22 +21,21 @@ class ImageCodecIface(nn.Module):
         raise NotImplementedError
 
     def fake_input(self, *args, **kwargs):
-        raise torch.randn([1,3,256,256])
+        device = kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
+        return torch.randn(1, 3, 256, 256, device=device)
 
     def flops(self, x, *args, **kwargs):
-        raise NotImplementedError
+        flops, info = safe_flops(self, x)
+        return flops, info
 
-    def param_count(self, x, *args, **kwargs):
-        total_params = sum(p.numel() for p in self.parameters())
-        return total_params
+    def param_count(self, *args, **kwargs):
+        return count_params(self)
 
-    @abstractmethod
     def encode_time(self, x, *args, **kwargs):
-        raise NotImplementedError
+        return None
 
-    @abstractmethod
     def decode_time(self, x, *args, **kwargs):
-        raise NotImplementedError
+        return None
 
 class VideoCodecIface(nn.Module):
     def __init__(self, *args, **kwargs):

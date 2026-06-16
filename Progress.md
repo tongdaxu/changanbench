@@ -1,26 +1,26 @@
 ## Codec 
 | Codec | YAML | Owner | Mode | Status | 
 |-------|------|--------| --------|--------|
-| JPEG | ./config/image_codecs/jpeg_*.yaml | Li siqi | Image | Done | 
-| HM | ? | Li siqi | Image | Done | 
-| VTM | ? | Li siqi | Image | Done | 
-| ELIC | ? | Li siqi | Image | Done | 
-| TCM | ? | Li siqi | Image | Done | 
-| MLIC++ | ? | Li siqi | Image | Done | 
-| HIFIC | ? | Li siqi | Image | Done | 
-| MSILLM | ? | Li siqi | Image | Done | 
-| DIFFEIC | ? | Li siqi | Image | Done | 
-| StableCodec | ? | Li siqi | Image | WIP | 
-| PERCO | ? | Li siqi | Image | WIP | 
-| FSQ | ? | Li siqi | Image | Done | 
-| BSQ | ? | Li siqi | Image | Done | 
-| VAR | ? | Li siqi | Image | Done | 
-| TATOK | ? | Li siqi | Image | Done | 
-| INFINITY | ? | Li siqi | Image | Done | 
-| COSMOS | ? | Li siqi | Image | Done | 
-| IBQ | ? | Li siqi | Image | Done | 
-| FLOWMO | ? | Li siqi | Image | Done | 
-| SSDD | ? | Li siqi | Image | Done | 
+| JPEG | ./config/image_cdoecs/jpeg_*.yaml | Li siqi | Image | Done | 
+| HM | ./config/image_cdoecs/hm_*.yaml | Li siqi | Image | Done | 
+| VTM | ./config/image_cdoecs/vtm_*.yaml | Li siqi | Image | Done | 
+| ELIC | ./config/image_cdoecs/elic_*.yaml | Li siqi | Image | Done | 
+| TCM | ./config/image_cdoecs/tcm_*.yaml | Li siqi | Image | Done | 
+| MLIC++ | ./config/image_cdoecs/MLIC++_*.yaml | Li siqi | Image | Done | 
+| HIFIC | ./config/image_cdoecs/hific_*.yaml | Li siqi | Image | Done | 
+| MS-ILLM | ./config/image_cdoecs/msillm_*.yaml | Li siqi | Image | Done | 
+| DiffEIC | ./config/image_cdoecs/diffeic_*.yaml | Li siqi | Image | Done | 
+| StableCodec | ./config/image_cdoecs/stablecodec_*.yaml | Li siqi | Image | WIP | 
+| PerCo | ./config/image_cdoecs/perco_*.yaml | Li siqi | Image | WIP | 
+| FSQ | ./config/image_cdoecs/fsq_*.yaml | Li siqi | Image | Done | 
+| BSQ | ./config/image_cdoecs/bsq_*.yaml | Li siqi | Image | Done | 
+| VAR | ./config/image_cdoecs/var_*.yaml | Li siqi | Image | Done | 
+| TA-ToK | ./config/image_cdoecs/tatok_*.yaml | Li siqi | Image | Done | 
+| Infinity | ./config/image_cdoecs/infinity_*.yaml | Li siqi | Image | Done | 
+| Cosmos | ./config/image_cdoecs/cosmos_*.yaml | Li siqi | Image | Done | 
+| IBQ | ./config/image_cdoecs/ibq_*.yaml | Li siqi | Image | Done | 
+| FlowMo | ./config/image_cdoecs/flowmo_*.yaml | Li siqi | Image | Done | 
+| SSDD | ./config/image_cdoecs/ssdd_*.yaml | Li siqi | Image | Done | 
 | H264 (?) | ? | Kong han | Video | Done |
 | H265 (HM) | ? | Kong han | Video | Done |
 | H266 (VVC) | ? | Kong han | Video | Done |
@@ -44,9 +44,9 @@
 ## Dataset 
 | Dataset | YAML | Owner | Mode | Status | 
 |-------|------|--------| --------|--------|
-| Kodak | ? | Li Siqi | Image | Done | 
-| CLIC 2020 | ? | Li Siqi | Image | Done | 
-| ImageNet Val | ? | Li Siqi | Image | Done | 
+| Kodak | config/image_datasets/kodak_dataset.yaml | Li Siqi | Image | Done | 
+| CLIC 2020 | config/image_datasets/clic_dataset.yaml | Li Siqi | Image | Done | 
+| ImageNet Val | config/image_datasets/imagenet_dataset.yaml | Li Siqi | Image | Done | 
 | XIPH | ? | Kong Han | Video | Done | 
 | HEVC CTC | ? | Kong Han | Video | TODO | 
 | 长安座舱 | ? | ? | ? | TODO | 

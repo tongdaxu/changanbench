@@ -16,12 +16,25 @@ def count_trainable_params(module: nn.Module):
     return sum(p.numel() for p in module.parameters() if p.requires_grad)
 
 
-def cuda_time_ms(fn, warmup=10, repeat=50):
-    # 用 CUDA event，比 time.time() 更适合 GPU 计时
+def cpu_time_ms(fn, warmup=5, repeat=20):
+    for _ in range(warmup):
+        fn()
+
+    times = []
+    for _ in range(repeat):
+        t0 = time.perf_counter()
+        fn()
+        times.append((time.perf_counter() - t0) * 1000)
+
+    return sum(times) / len(times)
+
+
+def cuda_time_ms(fn, warmup=3, repeat=10):
     for _ in range(warmup):
         fn()
 
     torch.cuda.synchronize()
+
     starter = torch.cuda.Event(enable_timing=True)
     ender = torch.cuda.Event(enable_timing=True)
 
@@ -36,23 +49,17 @@ def cuda_time_ms(fn, warmup=10, repeat=50):
     return sum(times) / len(times)
 
 
-def cpu_time_ms(fn, warmup=5, repeat=20):
-    for _ in range(warmup):
-        fn()
-
-    times = []
-    for _ in range(repeat):
-        t0 = time.perf_counter()
-        fn()
-        times.append((time.perf_counter() - t0) * 1000)
-
-    return sum(times) / len(times)
-
-
 def measure_time_ms(fn, device, warmup=10, repeat=50):
-    if device.type == "cuda":
+    device = torch.device(device)
+
+    if device.type == "cuda" and torch.cuda.is_available():
         return cuda_time_ms(fn, warmup=warmup, repeat=repeat)
-    return cpu_time_ms(fn, warmup=max(1, warmup // 2), repeat=max(1, repeat // 2))
+
+    return cpu_time_ms(
+        fn,
+        warmup=max(1, warmup // 2),
+        repeat=max(1, repeat // 2),
+    )
 
 
 def safe_flops(module, inputs):

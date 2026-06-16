@@ -477,11 +477,12 @@ fsq_q0:
   type: cab.codec.fsq.FSQImageTokenizer
   params:
     quality: 0
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/FSQ/ckpt/fsq_q0.pth
+    ckpt_path: /NEW_EDS/lisq/pytorch-image-tokenizer-master2/logs/2025-07-28T15-57-01_-sd3unet_fsq_888555/checkpoints/epoch=000015.ckpt
     dataset_zero_mean: false
     metrics_zero_mean: false
-    levels: [8, 5, 5, 5]
-    downsample_factor: 16
+    base: /NEW_EDS/lisq/changanbench/cab/models/fsq/sd3unet_fsq_0.125bpp.yaml
+    bits_per_token: 10
+    downsample_factor: 32
 
 
 # ============ Metrics ============
