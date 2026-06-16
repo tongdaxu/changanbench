@@ -38,6 +38,9 @@ def parse_args(input_args=None):
     parser.add_argument('--dist-url', default='env://', type=str,
                         help='url used to set up distributed training')
     parser.add_argument('--profile', action='store_true', help='test complexity and latency')
+    parser.add_argument("--profile_image_size", type=int, default=256)
+    parser.add_argument("--profile_warmup", type=int, default=3)
+    parser.add_argument("--profile_repeat", type=int, default=10)
     if input_args is not None:
         args = parser.parse_args(input_args)
     else:
@@ -266,18 +269,48 @@ def main():
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
     
     if dist_utils.get_rank() == 0 and args.profile:
-        x = codec.fake_input().cuda()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        profile_result = {
-            "encode_params_m": codec.encode_params_m(),
-            "decode_params_m": codec.decode_params_m(),
-            "encode_gflops": codec.encode_gflops(x),
-            "decode_gflops": codec.decode_gflops(x),
-            "encode_time_ms": codec.encode_time_ms(x),
-            "decode_time_ms": codec.decode_time_ms(x),
-        }
+        try:
+            codec = codec.to(device)
+        except Exception:
+            pass
 
-        print(profile_result)
+        codec.eval()
+
+        x = codec.fake_input(
+            image_size=args.profile_image_size,
+            batch_size=1,
+            device=device,
+        )
+
+        with torch.no_grad():
+            enc_params = codec.encode_params_m()
+            dec_params = codec.decode_params_m()
+
+            enc_time = codec.encode_time_ms(
+                x,
+                warmup=args.profile_warmup,
+                repeat=args.profile_repeat,
+            )
+
+            dec_time = codec.decode_time_ms(
+                x,
+                warmup=args.profile_warmup,
+                repeat=args.profile_repeat,
+            )
+
+            enc_flops = codec.encode_gflops(x)
+            dec_flops = codec.decode_gflops(x)
+
+        print("========== Complexity ==========")
+        print(f"Encode Params: {enc_params:.3f} M")
+        print(f"Decode Params: {dec_params:.3f} M")
+        print(f"Encode Time:   {enc_time:.2f} ms / image")
+        print(f"Decode Time:   {dec_time:.2f} ms / image")
+        print(f"Encode FLOPs:  {enc_flops:.3f} GFLOPs" if enc_flops is not None else "Encode FLOPs:  N/A")
+        print(f"Decode FLOPs:  {dec_flops:.3f} GFLOPs" if dec_flops is not None else "Decode FLOPs:  N/A")
+        print("================================")
 
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
