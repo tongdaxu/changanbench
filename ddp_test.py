@@ -265,19 +265,19 @@ def main():
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
     
-    if dist_utils.get_rank() == 0 and hasattr(codec, "complexity"):
-        complexity = codec.complexity(
-            image_size=args.image_size,
-            batch_size=1,
-            steps=1,
-            warmup=10,
-            repeat=50,
-        )
+    if dist_utils.get_rank() == 0 and args.profile:
+        x = codec.fake_input().cuda()
 
-        print(f"\nComplexity: {cname}")
-        for k, v in complexity.items():
-            if "info" not in k:
-                print(f"{k}: {v}")
+        profile_result = {
+            "encode_params_m": codec.encode_params_m(),
+            "decode_params_m": codec.decode_params_m(),
+            "encode_gflops": codec.encode_gflops(x),
+            "decode_gflops": codec.decode_gflops(x),
+            "encode_time_ms": codec.encode_time_ms(x),
+            "decode_time_ms": codec.decode_time_ms(x),
+        }
+
+        print(profile_result)
 
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:

@@ -6,6 +6,7 @@ from cab.codec.abs import ImageCodecIface
 import compressai
 from compressai.zoo import load_state_dict
 from cab.models.ELIC.Network import TestModel
+from cab.utils.complexity import params_m, time_ms, gflops
 
 class ELICImageCodec(ImageCodecIface):
     def __init__(self, quality, ckpt_path, *args, **kwargs):

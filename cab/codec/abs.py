@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from cab.utils.complexity import count_params, safe_flops
+from cab.complexity import params_m, gflops
 
 import torch
 import torch.nn as nn
@@ -24,17 +24,22 @@ class ImageCodecIface(nn.Module):
         device = kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
         return torch.randn(1, 3, 256, 256, device=device)
 
-    def flops(self, x, *args, **kwargs):
-        flops, info = safe_flops(self, x)
-        return flops, info
+    def encode_params_m(self):
+        return params_m(self)
 
-    def param_count(self, *args, **kwargs):
-        return count_params(self)
+    def decode_params_m(self):
+        return params_m(self)
 
-    def encode_time(self, x, *args, **kwargs):
+    def encode_time_ms(self, x, warmup=5, repeat=20):
         return None
 
-    def decode_time(self, x, *args, **kwargs):
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        return None
+
+    def encode_gflops(self, x):
+        return gflops(self, x)
+
+    def decode_gflops(self, x):
         return None
 
 class VideoCodecIface(nn.Module):
