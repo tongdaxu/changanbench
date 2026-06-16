@@ -1,7 +1,7 @@
 ## Codec 
 | Codec | YAML | Owner | Mode | Status | 
 |-------|------|--------| --------|--------|
-| JPEG | ./config/image_cdoecs/jpeg_*.yaml | Li siqi | Image | Done | 
+| JPEG | ./config/image_codecs/jpeg_*.yaml | Li siqi | Image | Done | 
 | HM | ? | Li siqi | Image | Done | 
 | VTM | ? | Li siqi | Image | Done | 
 | ELIC | ? | Li siqi | Image | Done | 
@@ -24,19 +24,19 @@
 | H264 (?) | ? | Kong han | Video | Done |
 | H265 (HM) | ? | Kong han | Video | Done |
 | H266 (VVC) | ? | Kong han | Video | Done |
-| DCVC | ? | Shi Yicheng | Video | WIP |
-| DCVC-TCM | ? | Shi Yicheng | Video | WIP |
-| DCVC-HEM | ? | Shi Yicheng | Video | WIP |
-| DCVC-DC | ? | Shi Yicheng | Video | WIP |
-| DCVC-FM | ? | Shi Yicheng | Video | WIP |
-| DCVC-RT | ? | Shi Yicheng | Video | WIP |
+| DCVC | ./config/video_codecs/dcvc_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-TCM | ./config/video_codecs/dcvc_tcm_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-HEM | ./config/video_codecs/dcvc_hem_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-DC | ./config/video_codecs/dcvc_dc_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-FM | ./config/video_codecs/dcvc_fm_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-RT | ./config/video_codecs/dcvc_rt_q*.yaml | Shi Yicheng | Video | WIP |
 | ? |  | Shi Yicheng | Video | TODO |
 
 ## Metric
 | Metric | YAML | Owner | Mode | Status | 
 |-------|------|--------|--------|--------|
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID | ./config/image_metrics.yaml | Li siqi | Image | Done | 
-| PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,VGGT | ? | Kong Han, Shi Yicheng | Video | Done | 
+| PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done | 
 | FLOPS,Latency,param count | ? | Li siqi | Image | TODO | 
 | FLOPS,Latency,param count | ? | Kong Han | Video | TODO | 
 | 座舱VLM | ? | ? | ? | TODO |

@@ -27,7 +27,8 @@ metrics: [psnr, ssim, lpips, vggt]
 xiph_video:
   type: cab.dataset.xiph_dataset.XiphVideoDataset
   params:
-    samples: [bus_cif]
+    samples:
+    - bus_cif
     root: ./cache/xiph
     clip_len: 32
     image_size: 256
@@ -35,7 +36,7 @@ xiph_video:
     sampling: uniform
     download: true
 
-# ============ Codecs ============
+# ============ Traditional Video Codecs ============
 h264_q0:
   type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
   params:
@@ -231,112 +232,5 @@ h266_q4:
     dataset_zero_mean: false
     metrics_zero_mean: false
 
-dcvc_q0:
-  type: cab.codec.dcvc_family.DCVCVideoCodec
-  params:
-    i_frame_model_paths: ["${DCVC_CKPT_DIR}/cheng2020-anchor-3-e49be189.pth.tar"]
-    model_paths: ["${DCVC_CKPT_DIR}/model_dcvc_quality_0_psnr.pth"]
-    model_index: 0
-    i_frame_model_name: cheng2020-anchor
-    device: cuda
-    intra_period: 32
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-dcvc_tcm_q0:
-  type: cab.codec.dcvc_family.DCVCTCMVideoCodec
-  params:
-    i_frame_model_paths: ["${DCVC_CKPT_DIR}/intra_psnr_TMM_q1.pth.tar"]
-    model_paths: ["${DCVC_CKPT_DIR}/inter_psnr_TMM_q1.pth"]
-    model_index: 0
-    device: cuda
-    intra_period: 32
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-dcvc_hem_q0:
-  type: cab.codec.dcvc_family.DCVCHEMVideoCodec
-  params:
-    i_frame_model_path: "${DCVC_CKPT_DIR}/acmmm2022_image_psnr.pth.tar"
-    model_path: "${DCVC_CKPT_DIR}/acmmm2022_video_psnr.pth.tar"
-    rate_num: 4
-    device: cuda
-    intra_period: 32
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-dcvc_dc_q0:
-  type: cab.codec.dcvc_family.DCVCDCVideoCodec
-  params:
-    i_frame_model_path: "${DCVC_CKPT_DIR}/cvpr2023_image_psnr.pth.tar"
-    p_frame_model_path: "${DCVC_CKPT_DIR}/cvpr2023_video_psnr.pth.tar"
-    i_frame_q_index: 0
-    p_frame_q_index: 0
-    rate_num: 1
-    device: cuda
-    intra_period: 32
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-dcvc_fm_q0:
-  type: cab.codec.dcvc_family.DCVCFMVideoCodec
-  params:
-    model_path_i: "${DCVC_CKPT_DIR}/cvpr2024_image.pth.tar"
-    model_path_p: "${DCVC_CKPT_DIR}/cvpr2024_video.pth.tar"
-    q_index_i: 0
-    q_index_p: 0
-    rate_num: 1
-    device: cuda
-    intra_period: 96
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-dcvc_rt_q0:
-  type: cab.codec.dcvc_family.DCVCRTVideoCodec
-  params:
-    model_path_i: "${DCVC_CKPT_DIR}/cvpr2025_image.pth.tar"
-    model_path_p: "${DCVC_CKPT_DIR}/cvpr2025_video.pth.tar"
-    qp_i: 0
-    qp_p: 0
-    rate_num: 1
-    device: cuda
-    intra_period: -1
-    force_zero_thres: 0.12
-    dataset_zero_mean: false
-    metrics_zero_mean: false
-
-# ============ Metrics ============
-psnr:
-  type: cab.evaluations.psnr.PSNRMetric
-  params:
-    zero_mean: false
-
-ssim:
-  type: cab.evaluations.ssim.SSIMMetric
-  params:
-    zero_mean: false
-
-lpips:
-  type: cab.evaluations.lpips.LPIPSMetric
-  params:
-    zero_mean: false
-    network_type: alex
-
-fid:
-  type: cab.evaluations.fid.get_fid.FIDMetric
-  params:
-    zero_mean: false
-
-fvd:
-  type: cab.evaluations.video_ddp.FVDMetric
-  params:
-    clip_length: 16
-    clip_stride: 16
-    device: cuda
-
-vggt:
-  type: cab.evaluations.video_vggt.VGGTMetric
-  params:
-    ckpt_path: /path/to/vggt/model.pt
-    device: cuda
-    score: camera_center_error_mean
+# DCVC-family codec definitions live in config/video_codecs/.
+# Video metric definitions live in config/video_metrics.yaml.
