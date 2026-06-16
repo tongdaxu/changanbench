@@ -1,0 +1,7 @@
+hm_q37:
+  type: cab.codec.HM.HMImageCodec
+  params:
+    qp: 37
+    hm_encoder_path: /NEW_EDS/JJ_Group/lisq/changanbench/TAppEncoderStatic_HMOriginal
+    dataset_zero_mean: false
+    metrics_zero_mean: false

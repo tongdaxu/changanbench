@@ -1,0 +1,7 @@
+clic2020:
+  type: cab.dataset.data.SimpleDataset
+  params:
+    # root: CLIC_2020.txt
+    root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
+    image_size: 256
+    zero_mean: null
