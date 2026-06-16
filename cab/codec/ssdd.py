@@ -64,6 +64,11 @@ class SSDDImageTokenizer(ImageCodecIface):
 
         return xhat, bpp
     
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = self.device
+        return torch.rand(batch_size, 3, image_size, image_size, device=device)
+    
     def encode_params_m(self):
         return params_m(self.model.encoder)
 
