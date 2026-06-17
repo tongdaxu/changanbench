@@ -5,6 +5,35 @@ from cab.codec.abs import ImageCodecIface
 from omegaconf import OmegaConf
 from cab.models.bsq import config as config_utils
 import torch.cuda.amp as amp
+from cab.complexity import params_m, time_ms, gflops
+
+class BSQEncodeWrapper(torch.nn.Module):
+    def __init__(self, bsq_model):
+        super().__init__()
+        self.model = bsq_model
+
+    def forward(self, x):
+        quant, _, _ = self.model.encode(x)
+        return quant
+
+
+class BSQDecodeWrapper(torch.nn.Module):
+    def __init__(self, bsq_model):
+        super().__init__()
+        self.model = bsq_model
+
+    def forward(self, quant):
+        return self.model.decode(quant)
+
+
+class BSQFullWrapper(torch.nn.Module):
+    def __init__(self, bsq_model):
+        super().__init__()
+        self.model = bsq_model
+
+    def forward(self, x):
+        xhat, _, _ = self.model(x)
+        return xhat
 
 class BSQImageTokenizer(ImageCodecIface):
     def __init__(self, quality, ckpt_path, config_path, bits_per_token, downsample_factor, *args, **kwargs):
@@ -46,4 +75,114 @@ class BSQImageTokenizer(ImageCodecIface):
         return xhat, torch.tensor([bpp], dtype=torch.float32, device=x.device)
 
 
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = self.device
 
+        if self.bsq_config.data.zero_mean:
+            return torch.rand(batch_size, 3, image_size, image_size, device=device) * 2 - 1
+
+        return torch.rand(batch_size, 3, image_size, image_size, device=device)
+
+    def encode_params_m(self):
+        modules = [
+            self.model.encoder,
+            self.model.quant_embed,
+            self.model.quantize,
+        ]
+        return sum(params_m(m) for m in modules)
+
+    def decode_params_m(self):
+        modules = [
+            self.model.post_quant_embed,
+            self.model.decoder,
+        ]
+        return sum(params_m(m) for m in modules)
+
+    @torch.no_grad()
+    def encode_tokens(self, x):
+        x = x.to(self.device, dtype=torch.float)
+
+        with amp.autocast(
+            enabled=not self.bsq_config.optimizer.disable_amp,
+            dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16,
+        ):
+            quant, _, _ = self.model.encode(x)
+
+        return quant
+
+    @torch.no_grad()
+    def decode_tokens(self, quant):
+        quant = quant.to(self.device)
+
+        with amp.autocast(
+            enabled=not self.bsq_config.optimizer.disable_amp,
+            dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16,
+        ):
+            xhat = self.model.decode(quant)
+
+        return xhat
+
+    @torch.no_grad()
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        enc = BSQEncodeWrapper(self.model).to(self.device).eval()
+
+        def fn():
+            with amp.autocast(
+                enabled=not self.bsq_config.optimizer.disable_amp,
+                dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16,
+            ):
+                return enc(x)
+
+        return time_ms(fn, self.device, warmup=warmup, repeat=repeat)
+
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        quant = self.encode_tokens(x).detach()
+
+        dec = BSQDecodeWrapper(self.model).to(self.device).eval()
+
+        def fn():
+            with amp.autocast(
+                enabled=not self.bsq_config.optimizer.disable_amp,
+                dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16,
+            ):
+                return dec(quant)
+
+        return time_ms(fn, self.device, warmup=warmup, repeat=repeat)
+
+    @torch.no_grad()
+    def encode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        enc = BSQEncodeWrapper(self.model).to(self.device).eval()
+        return gflops(enc, x)
+
+    @torch.no_grad()
+    def decode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        quant = self.encode_tokens(x).detach()
+
+        dec = BSQDecodeWrapper(self.model).to(self.device).eval()
+        return gflops(dec, quant)
+
+    @torch.no_grad()
+    def full_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        full = BSQFullWrapper(self.model).to(self.device).eval()
+        return gflops(full, x)
+
+    @torch.no_grad()
+    def full_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        full = BSQFullWrapper(self.model).to(self.device).eval()
+
+        def fn():
+            with amp.autocast(
+                enabled=not self.bsq_config.optimizer.disable_amp,
+                dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16,
+            ):
+                return full(x)
+
+        return time_ms(fn, self.device, warmup=warmup, repeat=repeat)
