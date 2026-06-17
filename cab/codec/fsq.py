@@ -3,6 +3,7 @@ import math
 from omegaconf import OmegaConf
 from cab.utils import get_obj_from_str
 from cab.codec.abs import ImageCodecIface
+from cab.complexity import params_m, time_ms, gflops
 
 def instantiate_from_config(config):
     if "target" not in config:
@@ -13,6 +14,22 @@ def instantiate_from_config(config):
         raise KeyError("Expected key `target` to instantiate.")
     return get_obj_from_str(config["target"])(**config.get("params", dict()))
 
+class FSQEncodeWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        return self.model.encode(x, return_reg_log=False)
+
+
+class FSQDecodeWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, z):
+        return self.model.decode(z)
 
 class FSQImageTokenizer(ImageCodecIface):
     """Finite Scalar Quantization tokenizer for image compression.
@@ -50,3 +67,68 @@ class FSQImageTokenizer(ImageCodecIface):
         bpp = torch.tensor([bpp], dtype=torch.float32, device=x.device)
         
         return xhat, bpp
+    
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = self.device
+        return torch.rand(batch_size, 3, image_size, image_size, device=device)
+
+    def encode_params_m(self):
+        if hasattr(self.model, "encoder"):
+            return params_m(self.model.encoder)
+        return params_m(self.model)
+
+    def decode_params_m(self):
+        if hasattr(self.model, "decoder"):
+            return params_m(self.model.decoder)
+        return params_m(self.model)
+
+    @torch.no_grad()
+    def encode_tokens(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        return self.model.encode(x, return_reg_log=False)
+
+    @torch.no_grad()
+    def decode_tokens(self, z):
+        z = z.to(self.device)
+        return self.model.decode(z)
+
+    @torch.no_grad()
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        enc = FSQEncodeWrapper(self.model).to(self.device).eval()
+
+        return time_ms(
+            lambda: enc(x),
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        z = self.encode_tokens(x).detach()
+
+        dec = FSQDecodeWrapper(self.model).to(self.device).eval()
+
+        return time_ms(
+            lambda: dec(z),
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+    @torch.no_grad()
+    def encode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        enc = FSQEncodeWrapper(self.model).to(self.device).eval()
+        return gflops(enc, x)
+
+    @torch.no_grad()
+    def decode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        z = self.encode_tokens(x).detach()
+
+        dec = FSQDecodeWrapper(self.model).to(self.device).eval()
+        return gflops(dec, z)
