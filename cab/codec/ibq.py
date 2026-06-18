@@ -9,12 +9,41 @@ from cab.codec.abs import ImageCodecIface
 # from cab.models.ibq.src.Open_MAGVIT2.models.lfqgan import VQModel
 from cab.models.ibq.src.IBQ.models.ibqgan import IBQ
 import yaml
+from cab.complexity import params_m, time_ms, gflops
 
 ## for different model configuration
 MODEL_TYPE = {
     # "Open-MAGVIT2": VQModel,
     "IBQ": IBQ
 }
+
+class IBQEncodeWrapper(torch.nn.Module):
+    def __init__(self, ibq_model):
+        super().__init__()
+        self.model = ibq_model
+
+    def forward(self, x):
+        quant, qloss, info = self.model.encode(x)
+        return quant
+
+
+class IBQDecodeWrapper(torch.nn.Module):
+    def __init__(self, ibq_model):
+        super().__init__()
+        self.model = ibq_model
+
+    def forward(self, quant):
+        return self.model.decode(quant)
+
+
+class IBQFullWrapper(torch.nn.Module):
+    def __init__(self, ibq_model):
+        super().__init__()
+        self.model = ibq_model
+
+    def forward(self, x):
+        quant, qloss, info = self.model.encode(x)
+        return self.model.decode(quant)
 
 def load_config(config_path, display=False):
     config = OmegaConf.load(config_path)
@@ -33,7 +62,7 @@ class IBQImageTokenizer(ImageCodecIface):
     def __init__(self, ckpt_path, ibq_config, codebook_size, downsample_factor, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ckpt_path = ckpt_path
-        self.device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.codebook_size = codebook_size
         self.downsample_factor = downsample_factor
 
@@ -58,3 +87,92 @@ class IBQImageTokenizer(ImageCodecIface):
         bpp = torch.tensor([bpp], dtype=torch.float32, device=x.device)
 
         return xhat, bpp
+    
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = self.device
+        return torch.rand(batch_size, 3, image_size, image_size, device=device) * 2 - 1
+
+    def encode_params_m(self):
+        modules = [
+            self.model.encoder,
+            self.model.quant_conv,
+            self.model.quantize,
+        ]
+        return sum(params_m(m) for m in modules if m is not None)
+
+    def decode_params_m(self):
+        modules = [
+            self.model.post_quant_conv,
+            self.model.decoder,
+        ]
+        return sum(params_m(m) for m in modules if m is not None)
+
+    @torch.no_grad()
+    def encode_tokens(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        quant, qloss, info = self.model.encode(x)
+        return quant
+
+    @torch.no_grad()
+    def decode_tokens(self, quant):
+        quant = quant.to(self.device)
+        return self.model.decode(quant)
+
+    @torch.no_grad()
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        enc = IBQEncodeWrapper(self.model).to(self.device).eval()
+
+        return time_ms(
+            lambda: enc(x),
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        quant = self.encode_tokens(x).detach()
+
+        dec = IBQDecodeWrapper(self.model).to(self.device).eval()
+
+        return time_ms(
+            lambda: dec(quant),
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+    @torch.no_grad()
+    def encode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        enc = IBQEncodeWrapper(self.model).to(self.device).eval()
+        return gflops(enc, x)
+
+    @torch.no_grad()
+    def decode_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        quant = self.encode_tokens(x).detach()
+
+        dec = IBQDecodeWrapper(self.model).to(self.device).eval()
+        return gflops(dec, quant)
+
+    @torch.no_grad()
+    def full_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+        full = IBQFullWrapper(self.model).to(self.device).eval()
+
+        return time_ms(
+            lambda: full(x),
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+    @torch.no_grad()
+    def full_gflops(self, x):
+        x = x.to(self.device, dtype=torch.float)
+        full = IBQFullWrapper(self.model).to(self.device).eval()
+        return gflops(full, x)
