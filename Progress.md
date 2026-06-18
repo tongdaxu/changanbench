@@ -37,7 +37,7 @@
 |-------|------|--------|--------|--------|
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID | ./config/image_metrics.yaml | Li siqi | Image | Done | 
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done | 
-| FLOPS,Latency,param count | ? | Li siqi | Image | TODO | 
+| FLOPS,Latency,param count | cab/complexity.py | Li siqi | Image | WIP | 
 | FLOPS,Latency,param count | ? | Kong Han | Video | TODO | 
 | 座舱VLM | ? | ? | ? | TODO |
 

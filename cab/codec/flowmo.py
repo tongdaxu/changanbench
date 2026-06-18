@@ -69,11 +69,6 @@ class FlowMoImageTokenizer(ImageCodecIface):
         xhat = self.model.reconstruct(x, dtype=dtype_to_use)
         bpp =self.codebook_size_for_entropy * self.code_length / (x.shape[2] * x.shape[3])
         return xhat, bpp
-    
-    def fake_input(self, image_size=256, batch_size=1, device=None):
-        if device is None:
-            device = self.device
-        return torch.rand(batch_size, 3, image_size, image_size, device=device) * 2 - 1
 
     def encode_params_m(self):
         modules = [self.model.encoder]
