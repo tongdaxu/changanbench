@@ -1,0 +1,10 @@
+uco3d_video:
+  type: cab.dataset.video_data.SequenceVideoDataset
+  params:
+    root: ../Codec-VGGT/dataset/uco3d
+    source_type: videos
+    video_pattern: rgb_video.mp4
+    clip_len: 32
+    image_size: 256
+    zero_mean: false
+    sampling: uniform

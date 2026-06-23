@@ -1,8 +1,8 @@
 dcvc_hem_q0:
   type: cab.codec.dcvc_family.DCVCHEMVideoCodec
   params:
-    i_frame_model_path: ${DCVC_CKPT_DIR}/acmmm2022_image_psnr.pth.tar
-    model_path: ${DCVC_CKPT_DIR}/acmmm2022_video_psnr.pth.tar
+    i_frame_model_path: checkpoints/dcvc_family/acmmm2022_image_psnr.pth.tar
+    model_path: checkpoints/dcvc_family/acmmm2022_video_psnr.pth.tar
     rate_num: 4
     device: cuda
     intra_period: 32

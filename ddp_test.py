@@ -23,7 +23,7 @@ def parse_args(input_args=None):
     parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
     parser.add_argument("--config", type=str, default="", help="legacy video benchmark config yaml")
-    parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets.yaml")
+    parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets")
     parser.add_argument("--video_codec_config", type=str, default="config/video_codecs",
                         help="video codec config directory OR a single codec yaml file")
     parser.add_argument("--video_metric_config", type=str, default="config/video_metrics.yaml")
@@ -75,9 +75,8 @@ def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
 def load_config_files(dataset_config_path, metric_config_path, codec_config_path, resolve=True):
     """Load and merge configs.
     
-    codec_config_path can be:
-    1. Single file: config/codec.yaml (contains one or multiple codecs)
-    2. Directory: config/codecs/ (each file is one codec)
+    dataset_config_path and codec_config_path can be either a single yaml file
+    or a directory containing one yaml file per component.
     """
     try:
         if not os.path.exists(dataset_config_path):
@@ -87,9 +86,57 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         if not os.path.exists(codec_config_path):
             raise FileNotFoundError(f"Codec config not found: {codec_config_path}")
         
-        dataset_cfg = OmegaConf.load(dataset_config_path)
         metric_cfg = OmegaConf.load(metric_config_path)
 
+        def load_component_configs(config_path, component_name):
+            component_cfgs = {}
+            component_names = []
+
+            if os.path.isfile(config_path):
+                raw = OmegaConf.to_container(OmegaConf.load(config_path), resolve=resolve)
+
+                if not isinstance(raw, dict):
+                    raise ValueError(f"Invalid {component_name} config file: {config_path}")
+
+                explicit_names = raw.get(f"{component_name}s")
+                for key, value in raw.items():
+                    if isinstance(value, dict) and "type" in value:
+                        component_cfgs[key] = value
+
+                if explicit_names is not None:
+                    component_names = list(explicit_names)
+                else:
+                    component_names = list(component_cfgs)
+
+                if not component_names:
+                    raise ValueError(
+                        f"No valid {component_name} configs found in {config_path}. "
+                        f"Expected structure: {{{component_name}_name: {{type: ..., params: ...}}}}"
+                    )
+
+            elif os.path.isdir(config_path):
+                for root, _, files in os.walk(config_path):
+                    for fname in sorted(files):
+                        if fname.endswith((".yaml", ".yml")):
+                            fpath = os.path.join(root, fname)
+                            raw = OmegaConf.to_container(OmegaConf.load(fpath), resolve=resolve)
+
+                            if not isinstance(raw, dict):
+                                continue
+
+                            for key, value in raw.items():
+                                if isinstance(value, dict) and "type" in value:
+                                    component_cfgs[key] = value
+                                    component_names.append(key)
+            else:
+                raise FileNotFoundError(f"{component_name.capitalize()} config path not found: {config_path}")
+
+            if not component_names:
+                raise ValueError(f"No valid {component_name} configs found in {config_path}")
+
+            return component_cfgs, component_names
+
+        dataset_cfgs, dataset_names = load_component_configs(dataset_config_path, "dataset")
         codec_cfgs = {}
         codec_names = []
 
@@ -137,7 +184,6 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
                 return [k for k, v in OmegaConf.to_container(cfg, resolve=resolve).items() if isinstance(v, dict)]
             return []
 
-        dataset_names = extract_names(dataset_cfg, "datasets")
         metric_names = extract_names(metric_cfg, "metrics")
 
         if not dataset_names:
@@ -151,13 +197,8 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
             "codecs": sorted(codec_names),
         }
 
-        ds_container = OmegaConf.to_container(dataset_cfg, resolve=resolve)
-        for name in dataset_names:
-            if name in ds_container:
-                main_dict[name] = ds_container[name]
-        for k, v in ds_container.items():
-            if k not in main_dict:
-                main_dict[k] = v
+        for dname in dataset_names:
+            main_dict[dname] = dataset_cfgs[dname]
 
         mt_container = OmegaConf.to_container(metric_cfg, resolve=resolve)
         for name in metric_names:

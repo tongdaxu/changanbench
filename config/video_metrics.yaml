@@ -24,6 +24,6 @@ fvd:
 vggt:
   type: cab.evaluations.video_vggt.VGGTMetric
   params:
-    ckpt_path: /path/to/vggt/model.pt
+    ckpt_path: checkpoints/vggt/model.pt
     device: cuda
     score: camera_center_error_mean

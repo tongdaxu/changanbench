@@ -1,8 +1,8 @@
 dcvc_fm_q0:
   type: cab.codec.dcvc_family.DCVCFMVideoCodec
   params:
-    model_path_i: ${DCVC_CKPT_DIR}/cvpr2024_image.pth.tar
-    model_path_p: ${DCVC_CKPT_DIR}/cvpr2024_video.pth.tar
+    model_path_i: checkpoints/dcvc_family/cvpr2024_image.pth.tar
+    model_path_p: checkpoints/dcvc_family/cvpr2024_video.pth.tar
     q_index_i: 0
     q_index_p: 0
     rate_num: 1

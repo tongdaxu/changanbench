@@ -1,8 +1,8 @@
 dcvc_dc_q0:
   type: cab.codec.dcvc_family.DCVCDCVideoCodec
   params:
-    i_frame_model_path: ${DCVC_CKPT_DIR}/cvpr2023_image_psnr.pth.tar
-    p_frame_model_path: ${DCVC_CKPT_DIR}/cvpr2023_video_psnr.pth.tar
+    i_frame_model_path: checkpoints/dcvc_family/cvpr2023_image_psnr.pth.tar
+    p_frame_model_path: checkpoints/dcvc_family/cvpr2023_video_psnr.pth.tar
     i_frame_q_index: 0
     p_frame_q_index: 0
     rate_num: 1

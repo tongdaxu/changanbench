@@ -49,6 +49,8 @@
 | ImageNet Val | config/image_datasets/imagenet_dataset.yaml | Li Siqi | Image | Done | 
 | XIPH | ? | Kong Han | Video | Done | 
 | HEVC CTC | ? | Kong Han | Video | TODO | 
+| ScanNet | config/video_datasets/scannet_dataset.yaml | Shi Yicheng | Video | WIP | 
+| UCO3D | config/video_datasets/uco3d_dataset.yaml | Shi Yicheng | Video | WIP | 
 | 长安座舱 | ? | ? | ? | TODO | 
 | 长安道路 | ? | ? | ? | TODO | 
 

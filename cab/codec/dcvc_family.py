@@ -538,7 +538,11 @@ def _bool_arg(value: bool) -> str:
 
 
 def _expand_path(path: str) -> str:
-    return os.path.expanduser(os.path.expandvars(path))
+    expanded = Path(os.path.expanduser(os.path.expandvars(path)))
+    if expanded.is_absolute():
+        return str(expanded)
+    project_root = Path(__file__).resolve().parents[2]
+    return str(project_root / expanded)
 
 
 def _natural_path_key(path: Path):
