@@ -11,6 +11,9 @@ cache
 !cab/models/dcvc_family/**/NOTICE*.txt
 !cab/models/dcvc_family/**/requirements.txt
 
+cab/models/fsq/sd3unet_fsq_0.25bpp.yaml
+config/image_codecs/fsq_q2.yaml
+
 
 TAppEncoderStatic_HMOriginal
 EncoderAppStatic_VTMOriginal
@@ -35,3 +38,6 @@ build/
 out_bin/
 decoded_frames/
 recon_bin_path/
+
+scripts/
+scripts/*

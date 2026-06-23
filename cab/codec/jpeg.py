@@ -16,6 +16,9 @@ class JPEGImageCodec(ImageCodecIface):
         """
         super().__init__(*args, **kwargs)
         self.quality = quality
+
+    def param_count(self, x, *args, **kwargs):
+        return super().param_count(x, *args, **kwargs)
     
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):

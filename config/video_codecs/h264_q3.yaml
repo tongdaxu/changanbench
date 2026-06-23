@@ -1,0 +1,12 @@
+h264_q3:
+  type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
+  params:
+    codec: libx264
+    crf: 23
+    preset: slow
+    fps: 30
+    pix_fmt: yuv420p
+    container_ext: .mp4
+    ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
+    dataset_zero_mean: false
+    metrics_zero_mean: false

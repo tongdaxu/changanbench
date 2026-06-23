@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from cab.complexity import params_m, gflops
 
 import torch
 import torch.nn as nn
@@ -19,6 +20,27 @@ class ImageCodecIface(nn.Module):
         """
         raise NotImplementedError
 
+    def fake_input(self, *args, **kwargs):
+        device = kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
+        return torch.randn(1, 3, 256, 256, device=device)
+
+    def encode_params_m(self):
+        return params_m(self)
+
+    def decode_params_m(self):
+        return params_m(self)
+
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        return None
+
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        return None
+
+    def encode_gflops(self, x):
+        return gflops(self, x)
+
+    def decode_gflops(self, x):
+        return None
 
 class VideoCodecIface(nn.Module):
     def __init__(self, *args, **kwargs):
@@ -33,6 +55,24 @@ class VideoCodecIface(nn.Module):
             xhat: (B, 3, T, H, W)
             bpp:  (B,) tensor, bits per pixel per frame
         """
+        raise NotImplementedError
+
+    def fake_input(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def flops(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    def param_count(self, x, *args, **kwargs):
+        total_params = sum(p.numel() for p in self.parameters())
+        return total_params
+
+    @abstractmethod
+    def encode_time(self, x, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def decode_time(self, x, *args, **kwargs):
         raise NotImplementedError
 
     # # complexity: to revise
