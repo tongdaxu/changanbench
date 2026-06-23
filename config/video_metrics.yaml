@@ -1,0 +1,38 @@
+metrics: [psnr, ssim, lpips, vggt]
+
+# ============ Frame Metrics ============
+psnr:
+  type: cab.evaluations.psnr.PSNRMetric
+  params:
+    zero_mean: false
+
+ssim:
+  type: cab.evaluations.ssim.SSIMMetric
+  params:
+    zero_mean: false
+
+lpips:
+  type: cab.evaluations.lpips.LPIPSMetric
+  params:
+    zero_mean: false
+    network_type: alex
+
+# ============ Video Metrics ============
+fid:
+  type: cab.evaluations.fid.get_fid.FIDMetric
+  params:
+    zero_mean: false
+
+fvd:
+  type: cab.evaluations.video_ddp.FVDMetric
+  params:
+    clip_length: 16
+    clip_stride: 16
+    device: cuda
+
+vggt:
+  type: cab.evaluations.video_vggt.VGGTMetric
+  params:
+    ckpt_path: /path/to/vggt/model.pt
+    device: cuda
+    score: camera_center_error_mean

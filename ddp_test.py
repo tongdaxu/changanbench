@@ -170,6 +170,32 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         raise
 
 
+def load_video_config_file(config_path):
+    config = OmegaConf.to_container(OmegaConf.load(config_path), resolve=True)
+    metric_config_path = os.path.join(os.path.dirname(config_path), "video_metrics.yaml")
+
+    if os.path.exists(metric_config_path):
+        metric_config = OmegaConf.to_container(OmegaConf.load(metric_config_path), resolve=True)
+        if "metrics" not in config and "metrics" in metric_config:
+            config["metrics"] = metric_config["metrics"]
+        for key, value in metric_config.items():
+            if key != "metrics" and key not in config:
+                config[key] = value
+
+    missing_metrics = [
+        name for name in config.get("metrics", [])
+        if name not in config
+    ]
+    if missing_metrics:
+        names = ", ".join(missing_metrics)
+        raise ValueError(
+            f"Missing metric definitions for: {names}. "
+            f"Expected them in {metric_config_path} or {config_path}."
+        )
+
+    return OmegaConf.create(config)
+
+
 def main():   
     args = parse_args()
     is_video_benchmark = bool(args.config)
@@ -179,7 +205,7 @@ def main():
     
     # Load config
     if is_video_benchmark:
-        config = OmegaConf.load(args.config)
+        config = load_video_config_file(args.config)
     else:
         config = load_config_files(args.image_dataset_config, args.image_metric_config, args.image_codec_config)
 

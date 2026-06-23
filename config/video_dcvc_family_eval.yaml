@@ -86,31 +86,3 @@ dcvc_rt_q0:
     force_zero_thres: 0.12
     dataset_zero_mean: false
     metrics_zero_mean: false
-
-psnr:
-  type: cab.evaluations.psnr.PSNRMetric
-  params:
-    zero_mean: false
-
-ssim:
-  type: cab.evaluations.ssim.SSIMMetric
-  params:
-    zero_mean: false
-
-lpips:
-  type: cab.evaluations.lpips.LPIPSMetric
-  params:
-    zero_mean: false
-    network_type: alex
-
-fid:
-  type: cab.evaluations.fid.get_fid.FIDMetric
-  params:
-    zero_mean: false
-
-fvd:
-  type: cab.evaluations.video_ddp.FVDMetric
-  params:
-    clip_length: 16
-    clip_stride: 16
-    device: cuda
