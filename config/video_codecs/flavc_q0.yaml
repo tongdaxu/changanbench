@@ -1,7 +1,0 @@
-flavc_q0:
-  type: cab.codec.neural_video_codecs.FLAVCVideoCodec
-  params:
-    checkpoint_path: checkpoints/neural_video_codecs/flavc/flavc_q0.pth
-    device: cuda
-    dataset_zero_mean: false
-    metrics_zero_mean: false

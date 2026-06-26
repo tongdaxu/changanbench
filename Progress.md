@@ -30,7 +30,10 @@
 | DCVC-DC | ./config/video_codecs/dcvc_dc_q*.yaml | Shi Yicheng | Video | WIP |
 | DCVC-FM | ./config/video_codecs/dcvc_fm_q*.yaml | Shi Yicheng | Video | WIP |
 | DCVC-RT | ./config/video_codecs/dcvc_rt_q*.yaml | Shi Yicheng | Video | WIP |
-| ? |  | Shi Yicheng | Video | TODO |
+| DHVC | ./config/video_codecs/dhvc_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-B | ./config/video_codecs/dcvc_b_q*.yaml | Shi Yicheng | Video | WIP |
+| DCVC-SDD | ./config/video_codecs/dcvc_sdd_q*.yaml | Shi Yicheng | Video | WIP |
+| BRHVC | ./config/video_codecs/brhvc_q*.yaml | Shi Yicheng | Video | WIP |
 
 ## Metric
 | Metric | YAML | Owner | Mode | Status | 

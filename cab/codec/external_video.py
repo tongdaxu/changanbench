@@ -8,7 +8,6 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import torch
@@ -17,13 +16,8 @@ from PIL import Image
 from cab.codec.abs import VideoCodecIface
 
 
-class _ExternalVideoCodec(VideoCodecIface):
-    """Subprocess adapter for non-DCVC neural video codecs.
-
-    The concrete projects are vendored under ``cab/models`` and usually keep
-    their own imports, scripts, and output layouts. This adapter standardizes
-    CAB's tensor contract while leaving each project isolated in a subprocess.
-    """
+class ExternalVideoCodec(VideoCodecIface):
+    """Subprocess-backed adapter for vendored video codec projects."""
 
     model_dir_name: str = ""
     output_json_name: str = "metrics.json"
@@ -31,7 +25,7 @@ class _ExternalVideoCodec(VideoCodecIface):
     def __init__(
         self,
         *,
-        checkpoint_path: str,
+        checkpoint_path: str | None = None,
         python_path: str | None = None,
         device: str = "cuda",
         keep_temp: bool = False,
@@ -39,7 +33,7 @@ class _ExternalVideoCodec(VideoCodecIface):
         metrics_zero_mean: bool | None = None,
     ):
         super().__init__()
-        self.checkpoint_path = _expand_project_path(checkpoint_path)
+        self.checkpoint_path = expand_project_path(checkpoint_path) if checkpoint_path else None
         self.python_path = python_path or sys.executable
         self.device = device
         self.keep_temp = bool(keep_temp)
@@ -69,7 +63,7 @@ class _ExternalVideoCodec(VideoCodecIface):
 
     @property
     def model_dir(self) -> Path:
-        return Path(__file__).resolve().parents[1] / "models" / self.model_dir_name
+        return project_root() / "cab" / "models" / self.model_dir_name
 
     def _process_one(self, video: torch.Tensor) -> tuple[torch.Tensor, float]:
         if not self.model_dir.exists():
@@ -77,21 +71,22 @@ class _ExternalVideoCodec(VideoCodecIface):
                 f"{self.__class__.__name__} source is missing: {self.model_dir}. "
                 "Vendor the official repository under cab/models first."
             )
-        if not Path(self.checkpoint_path).exists():
-            raise FileNotFoundError(f"Checkpoint not found: {self.checkpoint_path}")
+        for path in self._required_paths():
+            if not Path(path).exists():
+                raise FileNotFoundError(f"Required model file not found: {path}")
 
         with tempfile.TemporaryDirectory(prefix=f"cab_{self.model_dir_name}_") as tmp:
             tmp_dir = Path(tmp)
             try:
                 input_dir = tmp_dir / "input"
                 output_dir = tmp_dir / "output"
-                self._write_video_frames(video, input_dir)
+                write_video_frames(video, input_dir)
                 output_dir.mkdir(parents=True, exist_ok=True)
                 output_json = tmp_dir / self.output_json_name
                 cmd = self._build_command(input_dir, output_dir, output_json, video)
                 self._run(cmd)
-                rec = self._read_reconstruction(output_dir, video.shape[1])
-                bpp = self._read_bpp(output_json)
+                rec = read_reconstruction(output_dir, video.shape[1])
+                bpp = read_bpp(output_json)
                 if self.keep_temp:
                     self._persist_temp(tmp_dir)
                 return rec, bpp
@@ -109,9 +104,18 @@ class _ExternalVideoCodec(VideoCodecIface):
     ) -> list[str]:
         raise NotImplementedError
 
+    def _required_paths(self) -> list[str]:
+        return [self.checkpoint_path] if self.checkpoint_path else []
+
     def _run(self, cmd: list[str]) -> None:
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(self.model_dir) + os.pathsep + env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = (
+            str(project_root())
+            + os.pathsep
+            + str(self.model_dir)
+            + os.pathsep
+            + env.get("PYTHONPATH", "")
+        )
         proc = subprocess.run(
             cmd,
             cwd=self.model_dir,
@@ -122,33 +126,6 @@ class _ExternalVideoCodec(VideoCodecIface):
         )
         if proc.returncode != 0:
             raise RuntimeError("Neural video codec command failed:\n" + " ".join(cmd) + "\n" + proc.stdout)
-
-    @staticmethod
-    def _write_video_frames(video: torch.Tensor, folder: Path) -> None:
-        folder.mkdir(parents=True, exist_ok=True)
-        array = (video.permute(1, 2, 3, 0).numpy() * 255.0).round().clip(0, 255).astype(np.uint8)
-        for idx, frame in enumerate(array):
-            Image.fromarray(frame, mode="RGB").save(folder / f"{idx:05d}.png")
-
-    def _read_reconstruction(self, output_dir: Path, frame_count: int) -> torch.Tensor:
-        frame_paths = sorted(output_dir.rglob("*.png"), key=_natural_path_key)
-        if len(frame_paths) < frame_count:
-            raise FileNotFoundError(
-                f"Expected at least {frame_count} reconstructed frames, found {len(frame_paths)} under {output_dir}"
-            )
-        frames = []
-        for path in frame_paths[:frame_count]:
-            arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
-            frames.append(torch.from_numpy(arr).permute(2, 0, 1).contiguous())
-        return torch.stack(frames, dim=1)
-
-    @staticmethod
-    def _read_bpp(output_json: Path) -> float:
-        data = json.loads(output_json.read_text(encoding="utf-8"))
-        for key in ("bpp", "ave_all_frame_bpp", "bits_per_pixel"):
-            if key in data:
-                return float(data[key])
-        raise ValueError(f"Could not find bpp in {output_json}")
 
     def _persist_temp(self, tmp_dir: Path) -> None:
         keep_dir = Path(tempfile.mkdtemp(prefix=f"cab_{self.model_dir_name}_kept_"))
@@ -172,58 +149,44 @@ class _ExternalVideoCodec(VideoCodecIface):
         return None
 
 
-class DHVCVideoCodec(_ExternalVideoCodec):
-    model_dir_name = "dhvc"
-
-    def _build_command(self, input_dir: Path, output_dir: Path, output_json: Path, video: torch.Tensor) -> list[str]:
-        return [
-            self.python_path,
-            "cab_infer.py",
-            "--input-dir", str(input_dir),
-            "--output-dir", str(output_dir),
-            "--checkpoint", self.checkpoint_path,
-            "--output-json", str(output_json),
-            "--device", self.device,
-        ]
+def project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
 
 
-class FLAVCVideoCodec(_ExternalVideoCodec):
-    model_dir_name = "flavc"
-
-    def _build_command(self, input_dir: Path, output_dir: Path, output_json: Path, video: torch.Tensor) -> list[str]:
-        return [
-            self.python_path,
-            "cab_infer.py",
-            "--input-dir", str(input_dir),
-            "--output-dir", str(output_dir),
-            "--checkpoint", self.checkpoint_path,
-            "--output-json", str(output_json),
-            "--device", self.device,
-        ]
-
-
-class ECVCVideoCodec(_ExternalVideoCodec):
-    model_dir_name = "ecvc"
-
-    def _build_command(self, input_dir: Path, output_dir: Path, output_json: Path, video: torch.Tensor) -> list[str]:
-        return [
-            self.python_path,
-            "cab_infer.py",
-            "--input-dir", str(input_dir),
-            "--output-dir", str(output_dir),
-            "--checkpoint", self.checkpoint_path,
-            "--output-json", str(output_json),
-            "--device", self.device,
-        ]
-
-
-def _expand_project_path(path: str) -> str:
+def expand_project_path(path: str) -> str:
     expanded = Path(os.path.expanduser(os.path.expandvars(path)))
     if expanded.is_absolute():
         return str(expanded)
-    project_root = Path(__file__).resolve().parents[2]
-    return str(project_root / expanded)
+    return str(project_root() / expanded)
 
 
-def _natural_path_key(path: Path):
+def natural_path_key(path: Path):
     return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", str(path))]
+
+
+def write_video_frames(video: torch.Tensor, folder: Path) -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    array = (video.permute(1, 2, 3, 0).numpy() * 255.0).round().clip(0, 255).astype(np.uint8)
+    for idx, frame in enumerate(array):
+        Image.fromarray(frame, mode="RGB").save(folder / f"{idx:05d}.png")
+
+
+def read_reconstruction(output_dir: Path, frame_count: int) -> torch.Tensor:
+    frame_paths = sorted(output_dir.rglob("*.png"), key=natural_path_key)
+    if len(frame_paths) < frame_count:
+        raise FileNotFoundError(
+            f"Expected at least {frame_count} reconstructed frames, found {len(frame_paths)} under {output_dir}"
+        )
+    frames = []
+    for path in frame_paths[:frame_count]:
+        arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+        frames.append(torch.from_numpy(arr).permute(2, 0, 1).contiguous())
+    return torch.stack(frames, dim=1)
+
+
+def read_bpp(output_json: Path) -> float:
+    data = json.loads(output_json.read_text(encoding="utf-8"))
+    for key in ("bpp", "ave_all_frame_bpp", "bits_per_pixel"):
+        if key in data:
+            return float(data[key])
+    raise ValueError(f"Could not find bpp in {output_json}")

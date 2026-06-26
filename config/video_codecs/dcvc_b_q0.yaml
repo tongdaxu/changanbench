@@ -1,0 +1,10 @@
+dcvc_b_q0:
+  type: cab.codec.dcvc_b.DCVCBVideoCodec
+  params:
+    i_frame_model_path: checkpoints/neural_video_codecs/shared/cvpr2023_image_psnr.pth.tar
+    b_frame_model_path: checkpoints/neural_video_codecs/dcvc_b/dcvc_b_psnr.pth.tar
+    rate_idx: 0
+    gop: 32
+    device: cuda
+    dataset_zero_mean: false
+    metrics_zero_mean: false
