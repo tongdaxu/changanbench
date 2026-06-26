@@ -1,29 +1,29 @@
 ## Codec 
 | Codec | YAML | Owner | Mode | Status | 
 |-------|------|--------| --------|--------|
-| JPEG | ./config/image_cdoecs/jpeg_*.yaml | Li siqi | Image | Done | 
-| HM | ./config/image_cdoecs/hm_*.yaml | Li siqi | Image | Done | 
-| VTM | ./config/image_cdoecs/vtm_*.yaml | Li siqi | Image | Done | 
-| ELIC | ./config/image_cdoecs/elic_*.yaml | Li siqi | Image | Done | 
-| TCM | ./config/image_cdoecs/tcm_*.yaml | Li siqi | Image | Done | 
-| MLIC++ | ./config/image_cdoecs/MLIC++_*.yaml | Li siqi | Image | Done | 
-| HIFIC | ./config/image_cdoecs/hific_*.yaml | Li siqi | Image | Done | 
-| MS-ILLM | ./config/image_cdoecs/msillm_*.yaml | Li siqi | Image | Done | 
-| DiffEIC | ./config/image_cdoecs/diffeic_*.yaml | Li siqi | Image | Done | 
-| StableCodec | ./config/image_cdoecs/stablecodec_*.yaml | Li siqi | Image | WIP | 
-| PerCo | ./config/image_cdoecs/perco_*.yaml | Li siqi | Image | WIP | 
-| FSQ | ./config/image_cdoecs/fsq_*.yaml | Li siqi | Image | Done | 
-| BSQ | ./config/image_cdoecs/bsq_*.yaml | Li siqi | Image | Done | 
-| VAR | ./config/image_cdoecs/var_*.yaml | Li siqi | Image | Done | 
-| TA-ToK | ./config/image_cdoecs/tatok_*.yaml | Li siqi | Image | Done | 
-| Infinity | ./config/image_cdoecs/infinity_*.yaml | Li siqi | Image | Done | 
-| Cosmos | ./config/image_cdoecs/cosmos_*.yaml | Li siqi | Image | Done | 
-| IBQ | ./config/image_cdoecs/ibq_*.yaml | Li siqi | Image | Done | 
-| FlowMo | ./config/image_cdoecs/flowmo_*.yaml | Li siqi | Image | Done | 
-| SSDD | ./config/image_cdoecs/ssdd_*.yaml | Li siqi | Image | Done | 
-| H264 (AVC) | ./config/video_codecs/h264_q*.yaml | Kong han | Video | Done |
-| H265 (HM) | ./config/video_codecs/h265_q*.yaml | Kong han | Video | Done |
-| H266 (VVC) | ./config/video_codecs/h266_q*.yaml | Kong han | Video | Done |
+| JPEG | ./config/image_codecs/jpeg_*.yaml | Li siqi | Image | Done | 
+| HM | ./config/image_codecs/hm_*.yaml | Li siqi | Image | Done | 
+| VTM | ./config/image_codecs/vtm_*.yaml | Li siqi | Image | Done | 
+| ELIC | ./config/image_codecs/elic_*.yaml | Li siqi | Image | Done | 
+| TCM | ./config/image_codecs/tcm_*.yaml | Li siqi | Image | Done | 
+| MLIC++ | ./config/image_codecs/MLIC++_*.yaml | Li siqi | Image | Done | 
+| HIFIC | ./config/image_codecs/hific_*.yaml | Li siqi | Image | Done | 
+| MS-ILLM | ./config/image_codecs/msillm_*.yaml | Li siqi | Image | Done | 
+| DiffEIC | ./config/image_codecs/diffeic_*.yaml | Li siqi | Image | Done | 
+| StableCodec | ./config/image_codecs/stablecodec_*.yaml | Li siqi | Image | WIP | 
+| PerCo | ./config/image_codecs/perco_*.yaml | Li siqi | Image | WIP | 
+| FSQ | ./config/image_codecs/fsq_*.yaml | Li siqi | Image | Done | 
+| BSQ | ./config/image_codecs/bsq_*.yaml | Li siqi | Image | Done | 
+| VAR | ./config/image_codecs/var_*.yaml | Li siqi | Image | Done | 
+| TA-ToK | ./config/image_codecs/tatok_*.yaml | Li siqi | Image | Done | 
+| Infinity | ./config/image_codecs/infinity_*.yaml | Li siqi | Image | Done | 
+| Cosmos | ./config/image_codecs/cosmos_*.yaml | Li siqi | Image | Done | 
+| IBQ | ./config/image_codecs/ibq_*.yaml | Li siqi | Image | Done | 
+| FlowMo | ./config/image_codecs/flowmo_*.yaml | Li siqi | Image | Done | 
+| SSDD | ./config/image_codecs/ssdd_*.yaml | Li siqi | Image | Done | 
+| H264 (?) | ? | Kong han | Video | Done |
+| H265 (HM) | ? | Kong han | Video | Done |
+| H266 (VVC) | ? | Kong han | Video | Done |
 | DCVC | ./config/video_codecs/dcvc_q*.yaml | Shi Yicheng | Video | WIP |
 | DCVC-TCM | ./config/video_codecs/dcvc_tcm_q*.yaml | Shi Yicheng | Video | WIP |
 | DCVC-HEM | ./config/video_codecs/dcvc_hem_q*.yaml | Shi Yicheng | Video | WIP |
@@ -37,7 +37,7 @@
 |-------|------|--------|--------|--------|
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID | ./config/image_metrics.yaml | Li siqi | Image | Done | 
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done | 
-| FLOPS,Latency,param count | cab/complexity.py | Li siqi | Image | WIP | 
+| FLOPS,Latency,param count | ./config/image_metrics.yaml | Li siqi | Image | WIP | 
 | FLOPS,Latency,param count | ? | Kong Han | Video | TODO | 
 | 座舱VLM | ? | ? | ? | TODO |
 

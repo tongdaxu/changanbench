@@ -19,10 +19,11 @@ class ImageCodecIface(nn.Module):
             bpp:  (B,) tensor
         """
         raise NotImplementedError
-
-    def fake_input(self, *args, **kwargs):
-        device = kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-        return torch.randn(1, 3, 256, 256, device=device)
+    
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        return torch.randn(1, 3, image_size, image_size, device=device)
 
     def encode_params_m(self):
         return params_m(self)

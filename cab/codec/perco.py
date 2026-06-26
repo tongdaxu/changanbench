@@ -2,9 +2,9 @@ import numpy as np
 import torch
 import os, sys
 # ensure perco custom modules are importable by name used in pipeline configs
-_perco_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "perco_src"))
-if _perco_src not in sys.path:
-    sys.path.insert(0, _perco_src)
+# _perco_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "perco_src"))
+# if _perco_src not in sys.path:
+#     sys.path.insert(0, _perco_src)
 from cab.codec.abs import ImageCodecIface
 from cab.models.perco_src.config import ConfigPerco as cfg_perco
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
@@ -74,6 +74,18 @@ class PerCoImageCodec(ImageCodecIface):
         self.pipe.hyper_enc.quantizer = self.pipe.hyper_enc.quantizer.to(self.device)
         self.blip2 = self.blip2.to(self.device)
         # self.blip2.eval()
+
+        bos = self.blip2.config.text_config.bos_token_id
+        pad = self.blip2.config.text_config.pad_token_id
+        eos = self.blip2.config.text_config.eos_token_id
+
+        assert bos is not None, "text_config.bos_token_id is None"
+
+        self.blip2.config.text_config.decoder_start_token_id = bos
+        self.blip2.generation_config.bos_token_id = bos
+        self.blip2.generation_config.decoder_start_token_id = bos
+        self.blip2.generation_config.pad_token_id = pad
+        self.blip2.generation_config.eos_token_id = eos
 
         for i in range(B):
             img = x[i].unsqueeze(0).to(self.device)  # [1, C, H, W]

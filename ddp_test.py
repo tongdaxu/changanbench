@@ -37,10 +37,6 @@ def parse_args(input_args=None):
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--dist-url', default='env://', type=str,
                         help='url used to set up distributed training')
-    parser.add_argument('--profile', action='store_true', help='test complexity and latency')
-    parser.add_argument("--profile_image_size", type=int, default=256)
-    parser.add_argument("--profile_warmup", type=int, default=3)
-    parser.add_argument("--profile_repeat", type=int, default=10)
     if input_args is not None:
         args = parser.parse_args(input_args)
     else:
@@ -303,64 +299,34 @@ def main():
         metrics = []
         for mname in metrics_name:
             metric = instantiate_from_config(cfg[mname])
-            if is_video_benchmark:
+
+            if hasattr(metric, "bind_codec"):
+                metric.bind_codec(codec)
+
+            if is_video_benchmark and not getattr(metric, "is_complexity_metric", False):
                 metric = adapt_metric_for_video(str(mname), metric)
+
             metrics.append((mname, metric))
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
-    
-    if dist_utils.get_rank() == 0 and args.profile:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        try:
-            codec = codec.to(device)
-        except Exception:
-            pass
-
-        codec.eval()
-
-        x = codec.fake_input(
-            image_size=args.profile_image_size,
-            batch_size=1,
-            device=device,
-        )
-
-        with torch.no_grad():
-            enc_params = codec.encode_params_m()
-            dec_params = codec.decode_params_m()
-
-            enc_time = codec.encode_time_ms(
-                x,
-                warmup=args.profile_warmup,
-                repeat=args.profile_repeat,
-            )
-
-            dec_time = codec.decode_time_ms(
-                x,
-                warmup=args.profile_warmup,
-                repeat=args.profile_repeat,
-            )
-
-            enc_flops = codec.encode_gflops(x)
-            dec_flops = codec.decode_gflops(x)
-
-        print("========== Complexity ==========")
-        print(f"Encode Params: {enc_params:.3f} M")
-        print(f"Decode Params: {dec_params:.3f} M")
-        print(f"Encode Time:   {enc_time:.2f} ms / image")
-        print(f"Decode Time:   {dec_time:.2f} ms / image")
-        print(f"Encode FLOPs:  {enc_flops:.3f} GFLOPs" if enc_flops is not None else "Encode FLOPs:  N/A")
-        print(f"Decode FLOPs:  {dec_flops:.3f} GFLOPs" if dec_flops is not None else "Decode FLOPs:  N/A")
-        print("================================")
 
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
         for dname, dataset in datasets:
+            world_size = dist_utils.get_world_size()
+            rank = dist_utils.get_rank()
+            complexity_outputs = {}
+
+            if rank == 0:
+                for mname, metric in metrics:
+                    if getattr(metric, "is_complexity_metric", False):
+                        complexity_outputs[mname] = metric.compute(
+                            device=next(codec.parameters()).device
+                        )
             args.img_path = getattr(dataset, "root", None)
             cache_file_name = os.path.join(args.cache_dir, cname, dname)
             os.makedirs(cache_file_name, exist_ok=True)
-            world_size = dist_utils.get_world_size()
-            rank = dist_utils.get_rank()
+            
             # Initialize result accumulation lists for each rank
             metric_results = {mname: [[] for _ in range(world_size)] for mname, _ in metrics}
             bpp_results = [[] for _ in range(world_size)]
@@ -406,6 +372,8 @@ def main():
                     
                     # Compute metrics for all ranks
                     for mname, metric in metrics:
+                        if getattr(metric, "is_complexity_metric", False):
+                            continue
                         out = metric(img, rec, zero_mean=metrics_zero_mean)
                         
                         # Handle tuple outputs (e.g., (ssim, msssim))
@@ -484,7 +452,9 @@ def main():
                     bpp_results[j] = torch.cat(bpp_results[j], dim=0).numpy()
                 bpp_flat = np.concatenate(bpp_results, axis=0)[:total_num]
                 print(f"BPP: {np.mean(bpp_flat):.4f}") 
-                
+                for mname, metric in metrics:
+                    if getattr(metric, "is_complexity_metric", False):
+                        print(metric.format_result())
 
                 # Process metrics
                 for mname in metric_results.keys():

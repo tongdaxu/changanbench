@@ -1,0 +1,7 @@
+tcm_q1: # single GPU test
+  type: cab.codec.tcm.TCMImageCodec
+  params:
+    quality: 1
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/LIC_TCM/0.0035.pth.tar
+    dataset_zero_mean: false
+    metrics_zero_mean: false
