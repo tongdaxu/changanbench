@@ -1,4 +1,12 @@
 # ============ Metrics ============
+metrics:
+  - psnr
+  - ssim
+  - lpips
+  - dists
+  - fid
+  - complexity
+
 psnr:
   type: cab.evaluations.psnr.PSNRMetric
 
@@ -7,10 +15,19 @@ ssim:
 
 lpips:
   type: cab.evaluations.lpips.LPIPSMetric
-  network_type: alex
+  params:
+    network_type: alex
 
 dists:
   type: cab.evaluations.dists.DISTSMetric
 
 fid:
   type: cab.evaluations.fid.get_fid.FIDMetric
+
+complexity:
+  type: cab.evaluations.complexity.ComplexityMetric
+  params:
+    image_size: 256
+    batch_size: 1
+    warmup: 3
+    repeat: 10

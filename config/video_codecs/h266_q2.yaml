@@ -1,0 +1,12 @@
+h266_q2:
+  type: cab.codec.video_ffmpeg_video.FFmpegVideoCodec
+  params:
+    codec: libvvenc
+    qp: 32
+    preset: slow
+    fps: 30
+    pix_fmt: yuv420p10le
+    container_ext: .mkv
+    ffmpeg_path: ./tools/ffmpeg/bin/ffmpeg
+    dataset_zero_mean: false
+    metrics_zero_mean: false

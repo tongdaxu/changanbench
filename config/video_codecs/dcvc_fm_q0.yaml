@@ -1,0 +1,12 @@
+dcvc_fm_q0:
+  type: cab.codec.dcvc_family.DCVCFMVideoCodec
+  params:
+    model_path_i: checkpoints/dcvc_family/cvpr2024_image.pth.tar
+    model_path_p: checkpoints/dcvc_family/cvpr2024_video.pth.tar
+    q_index_i: 0
+    q_index_p: 0
+    rate_num: 1
+    device: cuda
+    intra_period: 96
+    dataset_zero_mean: false
+    metrics_zero_mean: false

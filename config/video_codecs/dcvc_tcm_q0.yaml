@@ -1,0 +1,12 @@
+dcvc_tcm_q0:
+  type: cab.codec.dcvc_family.DCVCTCMVideoCodec
+  params:
+    i_frame_model_paths:
+    - checkpoints/dcvc_family/intra_psnr_TMM_q1.pth.tar
+    model_paths:
+    - checkpoints/dcvc_family/inter_psnr_TMM_q1.pth
+    model_index: 0
+    device: cuda
+    intra_period: 32
+    dataset_zero_mean: false
+    metrics_zero_mean: false

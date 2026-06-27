@@ -1,0 +1,8 @@
+vtm_q27:
+  type: cab.codec.VTM.VTMImageCodec
+  params:
+    qp: 27
+    vtm_encoder_path: /NEW_EDS/JJ_Group/lisq/changanbench/EncoderAppStatic_VTMOriginal
+    vtm_decoder_path: /NEW_EDS/JJ_Group/lisq/standard_codec/VVCSoftware_VTM/bin/DecoderAppStatic_VTMOriginal
+    dataset_zero_mean: false
+    metrics_zero_mean: false

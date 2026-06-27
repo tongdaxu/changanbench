@@ -17,11 +17,16 @@ from cab.evaluations.video_ddp import (
 
 def parse_args(input_args=None):
     parser = argparse.ArgumentParser(description="test changan bench with DDP")
+    parser.add_argument("--mode", choices=["image", "video"], default="image")
     parser.add_argument("--image_codec_config", type=str, default="config/image_codecs",
                         help="codec config directory OR a single codec yaml file")
     parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
-    parser.add_argument("--config", type=str, default="", help="video benchmark config yaml")
+    parser.add_argument("--config", type=str, default="", help="legacy video benchmark config yaml")
+    parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets")
+    parser.add_argument("--video_codec_config", type=str, default="config/video_codecs",
+                        help="video codec config directory OR a single codec yaml file")
+    parser.add_argument("--video_metric_config", type=str, default="config/video_metrics.yaml")
     parser.add_argument("--cache_dir", type=str, default="./cache")
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
@@ -63,12 +68,11 @@ def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
         return t.unsqueeze(0)
     return t
 
-def load_config_files(dataset_config_path, metric_config_path, codec_config_path):
+def load_config_files(dataset_config_path, metric_config_path, codec_config_path, resolve=True):
     """Load and merge configs.
     
-    codec_config_path can be:
-    1. Single file: config/codec.yaml (contains one or multiple codecs)
-    2. Directory: config/codecs/ (each file is one codec)
+    dataset_config_path and codec_config_path can be either a single yaml file
+    or a directory containing one yaml file per component.
     """
     try:
         if not os.path.exists(dataset_config_path):
@@ -78,14 +82,62 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         if not os.path.exists(codec_config_path):
             raise FileNotFoundError(f"Codec config not found: {codec_config_path}")
         
-        dataset_cfg = OmegaConf.load(dataset_config_path)
         metric_cfg = OmegaConf.load(metric_config_path)
 
+        def load_component_configs(config_path, component_name):
+            component_cfgs = {}
+            component_names = []
+
+            if os.path.isfile(config_path):
+                raw = OmegaConf.to_container(OmegaConf.load(config_path), resolve=resolve)
+
+                if not isinstance(raw, dict):
+                    raise ValueError(f"Invalid {component_name} config file: {config_path}")
+
+                explicit_names = raw.get(f"{component_name}s")
+                for key, value in raw.items():
+                    if isinstance(value, dict) and "type" in value:
+                        component_cfgs[key] = value
+
+                if explicit_names is not None:
+                    component_names = list(explicit_names)
+                else:
+                    component_names = list(component_cfgs)
+
+                if not component_names:
+                    raise ValueError(
+                        f"No valid {component_name} configs found in {config_path}. "
+                        f"Expected structure: {{{component_name}_name: {{type: ..., params: ...}}}}"
+                    )
+
+            elif os.path.isdir(config_path):
+                for root, _, files in os.walk(config_path):
+                    for fname in sorted(files):
+                        if fname.endswith((".yaml", ".yml")):
+                            fpath = os.path.join(root, fname)
+                            raw = OmegaConf.to_container(OmegaConf.load(fpath), resolve=resolve)
+
+                            if not isinstance(raw, dict):
+                                continue
+
+                            for key, value in raw.items():
+                                if isinstance(value, dict) and "type" in value:
+                                    component_cfgs[key] = value
+                                    component_names.append(key)
+            else:
+                raise FileNotFoundError(f"{component_name.capitalize()} config path not found: {config_path}")
+
+            if not component_names:
+                raise ValueError(f"No valid {component_name} configs found in {config_path}")
+
+            return component_cfgs, component_names
+
+        dataset_cfgs, dataset_names = load_component_configs(dataset_config_path, "dataset")
         codec_cfgs = {}
         codec_names = []
 
         if os.path.isfile(codec_config_path):
-            raw = OmegaConf.to_container(OmegaConf.load(codec_config_path), resolve=True)
+            raw = OmegaConf.to_container(OmegaConf.load(codec_config_path), resolve=resolve)
             
             if not isinstance(raw, dict):
                 raise ValueError(f"Invalid codec config file: {codec_config_path}")
@@ -106,7 +158,7 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
                 for fname in sorted(files):
                     if fname.endswith((".yaml", ".yml")):
                         fpath = os.path.join(root, fname)
-                        raw = OmegaConf.to_container(OmegaConf.load(fpath), resolve=True)
+                        raw = OmegaConf.to_container(OmegaConf.load(fpath), resolve=resolve)
                         
                         if not isinstance(raw, dict):
                             continue
@@ -125,10 +177,9 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
             if isinstance(cfg, dict) or hasattr(cfg, "get"):
                 if key in cfg and cfg[key] is not None:
                     return list(cfg[key])
-                return [k for k, v in OmegaConf.to_container(cfg, resolve=True).items() if isinstance(v, dict)]
+                return [k for k, v in OmegaConf.to_container(cfg, resolve=resolve).items() if isinstance(v, dict)]
             return []
 
-        dataset_names = extract_names(dataset_cfg, "datasets")
         metric_names = extract_names(metric_cfg, "metrics")
 
         if not dataset_names:
@@ -142,15 +193,10 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
             "codecs": sorted(codec_names),
         }
 
-        ds_container = OmegaConf.to_container(dataset_cfg, resolve=True)
-        for name in dataset_names:
-            if name in ds_container:
-                main_dict[name] = ds_container[name]
-        for k, v in ds_container.items():
-            if k not in main_dict:
-                main_dict[k] = v
+        for dname in dataset_names:
+            main_dict[dname] = dataset_cfgs[dname]
 
-        mt_container = OmegaConf.to_container(metric_cfg, resolve=True)
+        mt_container = OmegaConf.to_container(metric_cfg, resolve=resolve)
         for name in metric_names:
             if name in mt_container:
                 main_dict[name] = mt_container[name]
@@ -170,16 +216,57 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         raise
 
 
+def load_video_config(config_path, metric_config_path, codec_config_path):
+    """Load video experiment config and merge split codec/metric definitions."""
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Video config not found: {config_path}")
+
+    base = OmegaConf.to_container(OmegaConf.load(config_path), resolve=False)
+    if not isinstance(base, dict):
+        raise ValueError(f"Invalid video config file: {config_path}")
+
+    merged = dict(base)
+    component_cfg = load_config_files(
+        config_path,
+        metric_config_path,
+        codec_config_path,
+        resolve=False,
+    )
+    component_dict = OmegaConf.to_container(component_cfg, resolve=False)
+    merged.update({k: v for k, v in component_dict.items() if k not in {"datasets", "codecs", "metrics"}})
+
+    missing = []
+    for key in list(merged.get("codecs", [])) + list(merged.get("metrics", [])):
+        if key not in merged:
+            missing.append(key)
+    if missing:
+        raise KeyError(
+            "Missing video component definitions: "
+            + ", ".join(missing)
+            + ". Check --video_codec_config and --video_metric_config."
+        )
+
+    return OmegaConf.create(merged)
+
+
 def main():   
     args = parse_args()
-    is_video_benchmark = bool(args.config)
+    is_video_benchmark = args.mode == "video" or bool(args.config)
 
     dist_utils.init_distributed_mode(args)
     dist_utils.random_seed(args.seed, dist_utils.get_rank())
     
     # Load config
     if is_video_benchmark:
-        config = OmegaConf.load(args.config)
+        if args.config:
+            config = load_video_config(args.config, args.video_metric_config, args.video_codec_config)
+        else:
+            config = load_config_files(
+                args.video_dataset_config,
+                args.video_metric_config,
+                args.video_codec_config,
+                resolve=False,
+            )
     else:
         config = load_config_files(args.image_dataset_config, args.image_metric_config, args.image_codec_config)
 
@@ -191,7 +278,7 @@ def main():
     
     for cname in codecs_name:
         # create a resolved dict copy, inject codec-specific zero_mean flags, then back to OmegaConf
-        cfg_dict = OmegaConf.to_container(config, resolve=True)
+        cfg_dict = OmegaConf.to_container(config, resolve=False)
         cfg_dict = inject_codec_zero_means(cfg_dict, cname)
         cfg = OmegaConf.create(cfg_dict)
 
@@ -212,34 +299,34 @@ def main():
         metrics = []
         for mname in metrics_name:
             metric = instantiate_from_config(cfg[mname])
-            if is_video_benchmark:
+
+            if hasattr(metric, "bind_codec"):
+                metric.bind_codec(codec)
+
+            if is_video_benchmark and not getattr(metric, "is_complexity_metric", False):
                 metric = adapt_metric_for_video(str(mname), metric)
+
             metrics.append((mname, metric))
 
         codecs.append((cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics))
-    
-    if dist_utils.get_rank() == 0 and hasattr(codec, "complexity"):
-        complexity = codec.complexity(
-            image_size=args.image_size,
-            batch_size=1,
-            steps=1,
-            warmup=10,
-            repeat=50,
-        )
-
-        print(f"\nComplexity: {cname}")
-        for k, v in complexity.items():
-            if "info" not in k:
-                print(f"{k}: {v}")
 
     # Evaluation loop
     for cname, codec, dataset_zero_mean, metrics_zero_mean, datasets, metrics in codecs:
         for dname, dataset in datasets:
+            world_size = dist_utils.get_world_size()
+            rank = dist_utils.get_rank()
+            complexity_outputs = {}
+
+            if rank == 0:
+                for mname, metric in metrics:
+                    if getattr(metric, "is_complexity_metric", False):
+                        complexity_outputs[mname] = metric.compute(
+                            device=next(codec.parameters()).device
+                        )
             args.img_path = getattr(dataset, "root", None)
             cache_file_name = os.path.join(args.cache_dir, cname, dname)
             os.makedirs(cache_file_name, exist_ok=True)
-            world_size = dist_utils.get_world_size()
-            rank = dist_utils.get_rank()
+            
             # Initialize result accumulation lists for each rank
             metric_results = {mname: [[] for _ in range(world_size)] for mname, _ in metrics}
             bpp_results = [[] for _ in range(world_size)]
@@ -285,6 +372,8 @@ def main():
                     
                     # Compute metrics for all ranks
                     for mname, metric in metrics:
+                        if getattr(metric, "is_complexity_metric", False):
+                            continue
                         out = metric(img, rec, zero_mean=metrics_zero_mean)
                         
                         # Handle tuple outputs (e.g., (ssim, msssim))
@@ -363,7 +452,9 @@ def main():
                     bpp_results[j] = torch.cat(bpp_results[j], dim=0).numpy()
                 bpp_flat = np.concatenate(bpp_results, axis=0)[:total_num]
                 print(f"BPP: {np.mean(bpp_flat):.4f}") 
-                
+                for mname, metric in metrics:
+                    if getattr(metric, "is_complexity_metric", False):
+                        print(metric.format_result())
 
                 # Process metrics
                 for mname in metric_results.keys():

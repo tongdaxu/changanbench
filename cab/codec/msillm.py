@@ -2,6 +2,7 @@ import torch
 import os
 import numpy as np
 from cab.codec.abs import ImageCodecIface
+from cab.complexity import params_m, time_ms
 import pickle
 
 def pickle_size_of(obj):
@@ -39,3 +40,108 @@ class MSILLMImageCodec(ImageCodecIface):
         bpp = torch.tensor(bpp_vals, dtype=torch.float32, device=x.device)  # shape: (batch,)
 
         return xhat, bpp
+    
+    def encode_params_m(self):
+        modules = [
+            self.model.encoder,
+            self.model.hyper_analysis,
+        ]
+        return sum(params_m(m) for m in modules if m is not None)
+
+    def decode_params_m(self):
+        modules = [
+            self.model.hyper_synthesis_mean,
+            self.model.hyper_synthesis_scale,
+            self.model.decoder,
+        ]
+        return sum(params_m(m) for m in modules if m is not None)
+
+    @torch.no_grad()
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+
+        def fn():
+            self.model.update_tensor_devices("compress")
+            return self.model.compress(x, force_cpu=False)
+
+        out = time_ms(
+            fn,
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+        self.model.update_tensor_devices("forward")
+        return out
+    
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        x = x.to(self.device, dtype=torch.float)
+
+        self.model.update_tensor_devices("compress")
+        compressed = self.model.compress(x, force_cpu=False)
+
+        def fn():
+            return self.model.decompress(
+                compressed,
+                force_cpu=False,
+            ).clamp(0.0, 1.0)
+
+        out = time_ms(
+            fn,
+            self.device,
+            warmup=warmup,
+            repeat=repeat,
+        )
+
+        self.model.update_tensor_devices("forward")
+        return out
+    
+    @torch.no_grad()
+    def encode_gflops(self, x):
+        from fvcore.nn import FlopCountAnalysis
+
+        x = x.to(self.device, dtype=torch.float)
+
+        encoder_flops = FlopCountAnalysis(
+            self.model.encoder,
+            x,
+        ).total()
+
+        latent = self.model.encoder(x)
+
+        hyper_analysis_flops = FlopCountAnalysis(
+            self.model.hyper_analysis,
+            latent,
+        ).total()
+
+        return (encoder_flops + hyper_analysis_flops) / 1e9
+
+    @torch.no_grad()
+    def decode_gflops(self, x):
+        from fvcore.nn import FlopCountAnalysis
+
+        x = x.to(self.device, dtype=torch.float)
+
+        latent = self.model.encoder(x)
+        hyper_latent = self.model.hyper_analysis(latent)
+        hyper_latent_hat = torch.round(hyper_latent)
+
+        mean_flops = FlopCountAnalysis(
+            self.model.hyper_synthesis_mean,
+            hyper_latent_hat,
+        ).total()
+
+        scale_flops = FlopCountAnalysis(
+            self.model.hyper_synthesis_scale,
+            hyper_latent_hat,
+        ).total()
+
+        latent_hat = torch.round(latent)
+
+        decoder_flops = FlopCountAnalysis(
+            self.model.decoder,
+            latent_hat,
+        ).total()
+
+        return (mean_flops + scale_flops + decoder_flops) / 1e9

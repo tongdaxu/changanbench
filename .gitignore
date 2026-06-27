@@ -6,10 +6,16 @@ __pycache__/
 cache
 .vscode
 *.txt
+*.out
 !cab/models/dcvc_family/**/CMakeLists.txt
 !cab/models/dcvc_family/**/LICENSE.txt
 !cab/models/dcvc_family/**/NOTICE*.txt
 !cab/models/dcvc_family/**/requirements.txt
+
+cab/models/fsq/sd3unet_fsq_0.25bpp.yaml
+config/image_codecs/fsq_q2.yaml
+cab/codec/__pycache__
+experiments
 
 
 TAppEncoderStatic_HMOriginal
@@ -35,3 +41,7 @@ build/
 out_bin/
 decoded_frames/
 recon_bin_path/
+
+scripts/
+scripts/*
+

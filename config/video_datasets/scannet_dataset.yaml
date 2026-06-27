@@ -1,0 +1,10 @@
+scannet_video:
+  type: cab.dataset.video_data.SequenceVideoDataset
+  params:
+    root: ../Codec-VGGT/dataset/scannet/frames_full
+    source_type: frame_dirs
+    frame_dir_pattern: color
+    clip_len: 32
+    image_size: 256
+    zero_mean: false
+    sampling: uniform

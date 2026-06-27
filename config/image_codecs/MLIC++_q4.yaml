@@ -1,0 +1,7 @@
+MLIC++_q4:
+  type: cab.codec.MLICPlusPlus.MLICPlusPlusImageCodec
+  params:
+    quality: 4
+    ckpt_path: /NEW_EDS/JJ_Group/lisq/MLIC-main/MLIC++/mlicpp_new_mse_q5.pth.tar
+    dataset_zero_mean: false
+    metrics_zero_mean: false

@@ -1,6 +1,0 @@
-jpeg_q90:
-  type: cab.codec.jpeg.JPEGImageCodec
-  params:
-    quality: 90
-    dataset_zero_mean: false
-    metrics_zero_mean: false

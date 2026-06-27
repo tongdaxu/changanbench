@@ -1,0 +1,6 @@
+imagenet_val:
+  type: cab.dataset.data.SimpleDataset
+  params:
+    root: /NEW_EDS/JJ_Group/xutd/common_datasets/imagenet/val/
+    image_size: 256
+    zero_mean: null

@@ -6,10 +6,9 @@ from cab.models.ssdd import SSDD
 import re
 
 from cab.complexity import (
-    count_params,
-    count_trainable_params,
-    measure_time_ms,
-    safe_flops,
+    params_m,
+    gflops,
+    time_ms,
 )
 
 class SSDDEncodeWrapper(torch.nn.Module):
@@ -30,16 +29,6 @@ class SSDDDecodeWrapper(torch.nn.Module):
     def forward(self, z):
         return self.model.decode(z, steps=self.steps)
 
-
-class SSDDFullWrapper(torch.nn.Module):
-    def __init__(self, ssdd_model, steps=1):
-        super().__init__()
-        self.model = ssdd_model
-        self.steps = steps
-
-    def forward(self, x):
-        z = self.model.encode(x).mode()
-        return self.model.decode(z, steps=self.steps)
 
 class SSDDImageTokenizer(ImageCodecIface):
     def __init__(self, quality, ckpt_path, encoder_spec, *args, **kwargs):
@@ -75,47 +64,41 @@ class SSDDImageTokenizer(ImageCodecIface):
 
         return xhat, bpp
     
+    def fake_input(self, image_size=256, batch_size=1, device=None):
+        if device is None:
+            device = self.device
+        return torch.rand(batch_size, 3, image_size, image_size, device=device)
+    
+    def encode_params_m(self):
+        return params_m(self.model.encoder)
+
+    def decode_params_m(self):
+        return params_m(self.model.decoder)
+
     @torch.no_grad()
-    def complexity(self, image_size=256, batch_size=1, steps=1, warmup=10, repeat=50):
-        device = self.device
-        x = torch.randn(batch_size, 3, image_size, image_size, device=device)
+    def encode_time_ms(self, x, warmup=3, repeat=10):
+        x = x.to(self.device)
+        enc = SSDDEncodeWrapper(self.model).to(self.device).eval()
+        return time_ms(lambda: enc(x), self.device, warmup, repeat)
 
-        self.model.eval()
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=3, repeat=10, steps=1):
+        x = x.to(self.device)
 
-        posterior = self.model.encode(x)
-        z = posterior.mode()
+        z = self.model.encode(x).mode()
+        dec = SSDDDecodeWrapper(self.model, steps=steps).to(self.device).eval()
 
-        enc = SSDDEncodeWrapper(self.model).to(device).eval()
-        dec = SSDDDecodeWrapper(self.model, steps=steps).to(device).eval()
-        full = SSDDFullWrapper(self.model, steps=steps).to(device).eval()
+        return time_ms(lambda: dec(z), self.device, warmup, repeat)
 
-        enc_time = measure_time_ms(lambda: enc(x), device, warmup, repeat)
-        dec_time = measure_time_ms(lambda: dec(z), device, warmup, repeat)
-        full_time = measure_time_ms(lambda: full(x), device, warmup, repeat)
+    def encode_gflops(self, x):
+        x = x.to(self.device)
+        enc = SSDDEncodeWrapper(self.model).to(self.device).eval()
+        return gflops(enc, x)
 
-        enc_flops, enc_info = safe_flops(enc, x)
-        dec_flops, dec_info = safe_flops(dec, z)
-        full_flops, full_info = safe_flops(full, x)
+    @torch.no_grad()
+    def decode_gflops(self, x, steps=1):
+        x = x.to(self.device)
+        z = self.model.encode(x).mode()
 
-        return {
-            "params_total": count_params(self.model),
-            "params_trainable": count_trainable_params(self.model),
-            "encoder_params": count_params(self.model.encoder),
-            "decoder_params": count_params(self.model.decoder),
-
-            "encode_ms_per_image": enc_time / batch_size,
-            "decode_ms_per_image": dec_time / batch_size,
-            "encode_decode_ms_per_image": full_time / batch_size,
-
-            "encode_flops": enc_flops,
-            "decode_flops": dec_flops,
-            "encode_decode_flops": full_flops,
-
-            "encode_gflops": None if enc_flops is None else enc_flops / 1e9,
-            "decode_gflops": None if dec_flops is None else dec_flops / 1e9,
-            "encode_decode_gflops": None if full_flops is None else full_flops / 1e9,
-
-            "fvcore_encode_info": enc_info,
-            "fvcore_decode_info": dec_info,
-            "fvcore_full_info": full_info,
-        }
+        dec = SSDDDecodeWrapper(self.model, steps=steps).to(self.device).eval()
+        return gflops(dec, z)

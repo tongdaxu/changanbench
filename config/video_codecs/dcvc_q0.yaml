@@ -1,0 +1,13 @@
+dcvc_q0:
+  type: cab.codec.dcvc_family.DCVCVideoCodec
+  params:
+    i_frame_model_paths:
+    - checkpoints/dcvc_family/cheng2020-anchor-3-e49be189.pth.tar
+    model_paths:
+    - checkpoints/dcvc_family/model_dcvc_quality_0_psnr.pth
+    model_index: 0
+    i_frame_model_name: cheng2020-anchor
+    device: cuda
+    intra_period: 32
+    dataset_zero_mean: false
+    metrics_zero_mean: false

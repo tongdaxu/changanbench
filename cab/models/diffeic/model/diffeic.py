@@ -10,7 +10,12 @@ import math
 import pyiqa
 import einops
 import numpy as np
-from pytorch_lightning.utilities.types import EPOCH_OUTPUT
+# from pytorch_lightning.utilities.types import EPOCH_OUTPUT
+try:
+    from pytorch_lightning.utilities.types import EPOCH_OUTPUT
+except ImportError:
+    from typing import Any
+    EPOCH_OUTPUT = Any
 from cab.models.diffeic.utils.utils import *
  
 from cab.models.diffeic.ldm.modules.diffusionmodules.util import (

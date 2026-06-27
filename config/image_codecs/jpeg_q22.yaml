@@ -1,0 +1,6 @@
+jpeg_q22:
+  type: cab.codec.jpeg.JPEGImageCodec
+  params:
+    quality: 22
+    dataset_zero_mean: false
+    metrics_zero_mean: false

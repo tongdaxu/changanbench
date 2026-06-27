@@ -1,0 +1,8 @@
+dhvc_q0:
+  type: cab.codec.dhvc.DHVCVideoCodec
+  params:
+    checkpoint_path: checkpoints/neural_video_codecs/dhvc/dhvc_q0.pth
+    gop: 32
+    device: cuda
+    dataset_zero_mean: false
+    metrics_zero_mean: false

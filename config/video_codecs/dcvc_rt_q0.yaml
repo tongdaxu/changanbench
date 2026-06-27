@@ -1,0 +1,13 @@
+dcvc_rt_q0:
+  type: cab.codec.dcvc_family.DCVCRTVideoCodec
+  params:
+    model_path_i: checkpoints/dcvc_family/cvpr2025_image.pth.tar
+    model_path_p: checkpoints/dcvc_family/cvpr2025_video.pth.tar
+    qp_i: 0
+    qp_p: 0
+    rate_num: 1
+    device: cuda
+    intra_period: -1
+    force_zero_thres: 0.12
+    dataset_zero_mean: false
+    metrics_zero_mean: false
