@@ -1,0 +1,7 @@
+perco_q2: #A100 to be validated
+  type: cab.codec.perco.PerCoImageCodec
+  params:
+    quality: 2
+    ckpt_path: /NEW_EDS/lisq/bsq-vit/Perco_0.125_model/cmvl_2024_full_train
+    dataset_zero_mean: false
+    metrics_zero_mean: false

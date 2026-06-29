@@ -1,26 +1,26 @@
 ## Codec 
 | Codec | YAML | ENV | Owner | Mode | Status | 
 |-------|------|--------| --------|--------|--------|
-| JPEG | ./config/image_codecs/jpeg_*.yaml | ? | Li siqi | Image | Done | 
-| HM | ./config/image_codecs/hm_*.yaml | ? | Li siqi | Image | Done | 
-| VTM | ./config/image_codecs/vtm_*.yaml | ? |Li siqi | Image | Done | 
-| ELIC | ./config/image_codecs/elic_*.yaml | ? | Li siqi | Image | Done | 
-| TCM | ./config/image_codecs/tcm_*.yaml | ? |Li siqi | Image | Done | 
-| MLIC++ | ./config/image_codecs/MLIC++_*.yaml | ? |Li siqi | Image | Done | 
-| HIFIC | ./config/image_codecs/hific_*.yaml | ? |Li siqi | Image | Done | 
-| MS-ILLM | ./config/image_codecs/msillm_*.yaml | ? |Li siqi | Image | Done | 
-| DiffEIC | ./config/image_codecs/diffeic_*.yaml | ? |Li siqi | Image | Done | 
-| StableCodec | ./config/image_codecs/stablecodec_*.yaml | ? |Li siqi | Image | WIP | 
-| PerCo | ./config/image_codecs/perco_*.yaml | ? | Li siqi | Image | WIP | 
-| FSQ | ./config/image_codecs/fsq_*.yaml | ? | Li siqi | Image | Done | 
-| BSQ | ./config/image_codecs/bsq_*.yaml | ? | Li siqi | Image | Done | 
-| VAR | ./config/image_codecs/var_*.yaml | ? | Li siqi | Image | Done | 
-| TA-ToK | ./config/image_codecs/tatok_*.yaml | ? | Li siqi | Image | Done | 
-| Infinity | ./config/image_codecs/infinity_*.yaml | ? | Li siqi | Image | Done | 
-| Cosmos | ./config/image_codecs/cosmos_*.yaml | ? | Li siqi | Image | Done | 
-| IBQ | ./config/image_codecs/ibq_*.yaml | ? | Li siqi | Image | Done | 
-| FlowMo | ./config/image_codecs/flowmo_*.yaml | ? | Li siqi | Image | Done | 
-| SSDD | ./config/image_codecs/ssdd_*.yaml | ? | Li siqi | Image | Done | 
+| JPEG | ./config/image_codecs/jpeg_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| HM | ./config/image_codecs/hm_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| VTM | ./config/image_codecs/vtm_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
+| ELIC | ./config/image_codecs/elic_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| TCM | ./config/image_codecs/tcm_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
+| MLIC++ | ./config/image_codecs/MLIC++_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
+| HIFIC | ./config/image_codecs/hific_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
+| MS-ILLM | ./config/image_codecs/msillm_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
+| DiffEIC | ./config/image_codecs/diffeic_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/diffeic/bin/python3.8 |Li siqi | Image | Done | 
+| StableCodec | ./config/image_codecs/stablecodec_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | WIP | 
+| PerCo | ./config/image_codecs/perco_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| FSQ | ./config/image_codecs/fsq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| BSQ | ./config/image_codecs/bsq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| VAR | ./config/image_codecs/var_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| TA-ToK | ./config/image_codecs/tatok_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| Infinity | ./config/image_codecs/infinity_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/infinity/bin/python3.10 | Li siqi | Image | Done | 
+| Cosmos | ./config/image_codecs/cosmos_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| IBQ | ./config/image_codecs/ibq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| FlowMo | ./config/image_codecs/flowmo_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
+| SSDD | ./config/image_codecs/ssdd_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
 | H264 (?) | ? | ? | Kong han | Video | Done |
 | H265 (HM) | ? | ? | Kong han | Video | Done |
 | H266 (VVC) | ? | ? | Kong han | Video | Done |
