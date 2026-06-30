@@ -10,7 +10,7 @@
 | HIFIC | ./config/image_codecs/hific_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
 | MS-ILLM | ./config/image_codecs/msillm_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | Done | 
 | DiffEIC | ./config/image_codecs/diffeic_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/diffeic/bin/python3.8 |Li siqi | Image | Done | 
-| StableCodec | ./config/image_codecs/stablecodec_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 |Li siqi | Image | WIP | 
+| StableCodec | ./config/image_codecs/stablecodec_*.yaml | /NEW_EDS/JJ_Group/lisq/home/.conda/envs/stablecodec/bin/python3.10 |Li siqi | Image | Done | 
 | PerCo | ./config/image_codecs/perco_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
 | FSQ | ./config/image_codecs/fsq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
 | BSQ | ./config/image_codecs/bsq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 

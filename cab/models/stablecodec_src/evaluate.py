@@ -41,10 +41,9 @@ def evaluate(recon_dir, gt_dir, ntest):
         metric_paired_dict["psnr"] = pyiqa.create_metric('psnr').to(device)
         metric_paired_dict["dists"] = pyiqa.create_metric('dists').to(device)
         metric_paired_dict["ms_ssim"] = pyiqa.create_metric('ms_ssim').to(device)
-        metric_paired_dict["ssim"] = pyiqa.create_metric('ssim').to(device)
         metric_paired_dict["lpips"] = LearnedPerceptualImagePatchSimilarity(normalize=True).to(device) # lpips-alexnet 
         fid_metric = FrechetInceptionDistance().to(device)
-        # kid_metric = KernelInceptionDistance().to(device)
+        kid_metric = KernelInceptionDistance().to(device)
         
     recon_path_list = sorted([x for x in recon_dir.glob("*.[jpJP][pnPN]*[gG]")])
 
@@ -72,7 +71,7 @@ def evaluate(recon_dir, gt_dir, ntest):
                 image_gt = image_gt.convert("RGB")
             gt_tensor = totensor(image_gt).unsqueeze(0).to(device)
 
-            update_patch_fid(gt_tensor, recon_tensor, fid_metric=fid_metric, patch_size=256)    
+            update_patch_fid(gt_tensor, recon_tensor, fid_metric=fid_metric, kid_metric=kid_metric)    
             
             for key, metric in metric_paired_dict.items():
                 value = metric(recon_tensor, gt_tensor).item()
@@ -81,17 +80,17 @@ def evaluate(recon_dir, gt_dir, ntest):
     
     if gt_dir is not None and len(recon_path_list) > 50:
         result['fid'] = float(fid_metric.compute())
-        # kid_tuple = kid_metric.compute()
-        # result['kid_mean'], result['kid_std'] = float(kid_tuple[0]), float(kid_tuple[1])
+        kid_tuple = kid_metric.compute()
+        result['kid_mean'], result['kid_std'] = float(kid_tuple[0]), float(kid_tuple[1])
 
     print_results = []
     for key, res in result.items():
         if key == 'fid':
             print(f"{key}: {res:.2f}")
             print_results.append(f"{key}: {res:.2f}")
-        # elif key == 'kid_mean' or key == 'kid_std':
-            # print(f"{key}: {res:.7f}")
-            # print_results.append(f"{key}: {res:.7f}")
+        elif key == 'kid_mean' or key == 'kid_std':
+            print(f"{key}: {res:.7f}")
+            print_results.append(f"{key}: {res:.7f}")
         else:
             print(f"{key}: {res/len(recon_path_list):.5f}")
             print_results.append(f"{key}: {res/len(recon_path_list):.5f}")
