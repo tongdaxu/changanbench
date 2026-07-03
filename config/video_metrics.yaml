@@ -6,6 +6,7 @@ metrics:
   - fid
   - fvd
   - vggt
+  - complexity
 
 psnr:
   type: cab.evaluations.psnr.PSNRMetric
@@ -40,3 +41,11 @@ vggt:
     ckpt_path: checkpoints/vggt/model.pt
     device: cuda
     score: camera_center_error_mean
+complexity:
+  type: cab.evaluations.complexity.ComplexityMetric
+  params:
+    image_size: 256
+    batch_size: 1
+    frames: 16
+    warmup: 1
+    repeat: 3

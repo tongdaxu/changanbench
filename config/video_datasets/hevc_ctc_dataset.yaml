@@ -2,13 +2,12 @@ hevc_ctc_video:
   type: cab.dataset.hevc_ctc_dataset.HevcCtcVideoDataset
   params:
     root: ./cache/hevc_ctc
-    classes:
-      - ClassB
-      - ClassC
-      - ClassD
-      - ClassE
+    sequences:
+      - FourPeople
+      - Johnny
+      - KristenAndSara
     clip_len: 32
     image_size: 256
     zero_mean: false
     sampling: uniform
-    download: false
+    download: true

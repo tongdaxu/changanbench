@@ -68,6 +68,13 @@ def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
         return t.unsqueeze(0)
     return t
 
+
+def _module_device(module):
+    param = next(module.parameters(), None)
+    if param is not None:
+        return param.device
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def load_config_files(dataset_config_path, metric_config_path, codec_config_path, resolve=True):
     """Load and merge configs.
     
@@ -326,7 +333,7 @@ def main():
                 for mname, metric in metrics:
                     if getattr(metric, "is_complexity_metric", False):
                         complexity_outputs[mname] = metric.compute(
-                            device=next(codec.parameters()).device
+                            device=_module_device(codec)
                         )
             args.img_path = getattr(dataset, "root", None)
             cache_file_name = os.path.join(args.cache_dir, cname, dname)

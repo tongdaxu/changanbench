@@ -41,7 +41,7 @@
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID | ./config/image_metrics.yaml | Li siqi | Image | Done | 
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,FVD,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done |
 | FLOPS,Latency,param count | ./config/image_metrics.yaml | Li siqi | Image | WIP | 
-| FLOPS,Latency,param count | ? | Kong Han | Video | TODO | 
+| FLOPS,Latency,param count | ./config/video_metrics.yaml | Kong Han | Video | Done |
 | 座舱VLM | ? | ? | ? | TODO |
 
 ## Dataset 
@@ -61,7 +61,7 @@
 | Item | Artifact | Owner | Status |
 |-------|------|--------|--------|
 | Download image codec weights | ./tools/download_weights/download_*_weights.py -> ./ImageCodecWeights/<codec>/ | Kong Han | Done |
-| Download dataset | ? | ? | ? |
+| Download video datasets | XIPH and HEVC CTC via ./config/video_datasets/*.yaml | Kong Han | Done |
 | Docker | ? | ? | ? |
 
 ## Results

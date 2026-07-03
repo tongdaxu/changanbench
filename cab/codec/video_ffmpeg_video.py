@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from cab.complexity import time_ms
 from cab.codec.abs import VideoCodecIface
 
 
@@ -56,6 +57,78 @@ class FFmpegVideoCodec(VideoCodecIface):
         self.keep_temp = keep_temp
         self.dataset_zero_mean = dataset_zero_mean
         self.metrics_zero_mean = metrics_zero_mean
+
+    def fake_input(self, image_size=256, batch_size=1, frames=32, device=None):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        frames = 32 if frames is None else int(frames)
+        return torch.rand(
+            int(batch_size), 3, frames, int(image_size), int(image_size),
+            device=device,
+        )
+
+    def encode_params_m(self):
+        return 0.0
+
+    def decode_params_m(self):
+        return 0.0
+
+    def encode_gflops(self, x):
+        return None
+
+    def decode_gflops(self, x):
+        return None
+
+    @torch.no_grad()
+    def encode_time_ms(self, x, warmup=3, repeat=10):
+        x_cpu = x.detach().clamp(0.0, 1.0).cpu()
+
+        def fn():
+            for item in x_cpu:
+                frames = self._tensor_to_frames(item)
+                _, height, width, _ = frames.shape
+                with tempfile.TemporaryDirectory(prefix="cab_ffmpeg_complexity_enc_") as tmp:
+                    tmp_dir = Path(tmp)
+                    output_path = tmp_dir / f"encoded{self.container_ext}"
+                    self._encode_with_selected_backend(
+                        frames,
+                        output_path,
+                        width,
+                        height,
+                        tmp_dir,
+                    )
+
+        return time_ms(fn, torch.device("cpu"), warmup=warmup, repeat=repeat) / max(1, x_cpu.shape[0])
+
+    @torch.no_grad()
+    def decode_time_ms(self, x, warmup=3, repeat=10):
+        x_cpu = x.detach().clamp(0.0, 1.0).cpu()
+        with tempfile.TemporaryDirectory(prefix="cab_ffmpeg_complexity_dec_") as tmp:
+            tmp_dir = Path(tmp)
+            encoded_items = []
+            for idx, item in enumerate(x_cpu):
+                frames = self._tensor_to_frames(item)
+                _, height, width, _ = frames.shape
+                item_dir = tmp_dir / f"item_{idx}"
+                item_dir.mkdir(parents=True, exist_ok=True)
+                output_path = item_dir / f"encoded{self.container_ext}"
+                self._encode_with_selected_backend(
+                    frames,
+                    output_path,
+                    width,
+                    height,
+                    item_dir,
+                )
+                encoded_items.append((idx, output_path, frames.shape[0], height, width))
+
+            def fn():
+                for idx, output_path, _, _, _ in encoded_items:
+                    self._decode_with_ffmpeg(output_path, tmp_dir / f"decoded_{idx}")
+
+            return time_ms(fn, torch.device("cpu"), warmup=warmup, repeat=repeat) / max(1, x_cpu.shape[0])
+
+    encode_time = encode_time_ms
+    decode_time = decode_time_ms
 
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):

@@ -1,4 +1,4 @@
-datasets: [xiph_video]
+datasets: [xiph_video, hevc_ctc_video]
 codecs:
   - h264_q0
   - h264_q1
@@ -21,7 +21,7 @@ codecs:
   - dcvc_dc_q0
   - dcvc_fm_q0
   - dcvc_rt_q0
-metrics: [psnr, ssim, lpips, dists, fid, fvd, vggt]
+metrics: [psnr, ssim, lpips, dists, fid, fvd, vggt, complexity]
 
 # Video dataset definitions live in config/video_datasets/.
 # Video codec definitions live in config/video_codecs/.

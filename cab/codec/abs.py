@@ -58,23 +58,45 @@ class VideoCodecIface(nn.Module):
         """
         raise NotImplementedError
 
-    def fake_input(self, *args, **kwargs):
-        raise NotImplementedError
+    def fake_input(self, image_size=256, batch_size=1, frames=32, device=None, *args, **kwargs):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        frames = 32 if frames is None else int(frames)
+        return torch.randn(
+            int(batch_size), 3, frames, int(image_size), int(image_size),
+            device=device,
+        )
+
+    def encode_params_m(self):
+        return params_m(self)
+
+    def decode_params_m(self):
+        return params_m(self)
 
     def flops(self, x, *args, **kwargs):
-        raise NotImplementedError
+        return None
+
+    def encode_gflops(self, x):
+        return self.flops(x)
+
+    def decode_gflops(self, x):
+        return None
 
     def param_count(self, x, *args, **kwargs):
         total_params = sum(p.numel() for p in self.parameters())
         return total_params
 
-    @abstractmethod
-    def encode_time(self, x, *args, **kwargs):
-        raise NotImplementedError
+    def encode_time_ms(self, x, warmup=5, repeat=20):
+        return None
 
-    @abstractmethod
+    def decode_time_ms(self, x, warmup=5, repeat=20):
+        return None
+
+    def encode_time(self, x, *args, **kwargs):
+        return self.encode_time_ms(x, *args, **kwargs)
+
     def decode_time(self, x, *args, **kwargs):
-        raise NotImplementedError
+        return self.decode_time_ms(x, *args, **kwargs)
 
     # # complexity: to revise
     # total_params = sum(p.numel() for p in model.parameters())
