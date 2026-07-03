@@ -2,7 +2,7 @@ infinity_q2:
   type: cab.codec.infinity.InfinityImageTokenizer
   params:
     quality: 2
-    vqgan_ckpt: /NEW_EDS/JJ_Group/lisq/Infinity/infinity_vae_d32.pth
+    vqgan_ckpt: ./ImageCodecWeights/infinity/infinity_vae_d32.pth
     codebook_dim: 32
     dataset_zero_mean: true
     metrics_zero_mean: true

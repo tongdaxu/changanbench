@@ -3,6 +3,9 @@ tatok_q0:
   params:
     quality: 0
     ckpt_name: ar_dtok_lp_256px.pth #image_size: 256
+    ckpt_path: ./ImageCodecWeights/tatok/ar_dtok_lp_256px.pth
+    encoder_path: ./ImageCodecWeights/tatok/ta_tok.pth
+    decoder_path: ./ImageCodecWeights/tatok/vq_ds16_t2i.pt
     dataset_zero_mean: true
     metrics_zero_mean: true
     codebook_size: 65536

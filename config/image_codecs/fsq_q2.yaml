@@ -2,9 +2,9 @@ fsq_q2:
   type: cab.codec.fsq.FSQImageTokenizer
   params:
     quality: 2
-    ckpt_path: /NEW_EDS/lisq/pytorch-image-tokenizer-master2/logs/2025-07-26T10-04-00_-sd3unet_fsq_888555/checkpoints/epoch=000003.ckpt
+    ckpt_path: ./ImageCodecWeights/fsq/fsq_q2/epoch=000003.ckpt
     dataset_zero_mean: true
     metrics_zero_mean: true
-    base: /NEW_EDS/lisq/changanbench/cab/models/fsq/sd3unet_fsq_0.25bpp.yaml
+    base: cab/models/fsq/sd3unet_fsq_0.25bpp.yaml
     downsample_factor: 8
     levels: [8,8,8,5,5,5]

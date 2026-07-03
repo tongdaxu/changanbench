@@ -3,8 +3,33 @@ import numpy as np
 from cab.codec.abs import ImageCodecIface
 import torch
 from huggingface_hub import hf_hub_download
+from pathlib import Path
 from cab.models.tatok.t2i_inference import T2IConfig, TextToImageInference
 from cab.complexity import params_m, time_ms, gflops
+
+
+def _project_path(path):
+    path = Path(path)
+    if path.is_absolute():
+        return path
+    return Path(__file__).resolve().parents[2] / path
+
+
+def _resolve_or_download(repo_id, filename, local_path=None, token=None, revision=None):
+    if local_path:
+        path = _project_path(local_path)
+        if path.exists():
+            return str(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return hf_hub_download(
+            repo_id,
+            filename,
+            local_dir=str(path.parent),
+            local_dir_use_symlinks=False,
+            token=token,
+            revision=revision,
+        )
+    return hf_hub_download(repo_id, filename, token=token, revision=revision)
 
 class TaTokEncodeWrapper(torch.nn.Module):
     def __init__(self, visual_tokenizer):
@@ -34,19 +59,53 @@ class TaTokDecoderWrapper(torch.nn.Module):
         return self.decoder.decode_from_bottleneck(ar_indices)
 
 class TaTokImageTokenizer(ImageCodecIface):
-    def __init__(self, quality, ckpt_name, scale, seq_length, codebook_size, *args, **kwargs):
+    def __init__(
+        self,
+        quality,
+        ckpt_name,
+        scale,
+        seq_length,
+        codebook_size,
+        ckpt_path=None,
+        encoder_path=None,
+        decoder_path=None,
+        hf_token=None,
+        hf_revision=None,
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.quality = quality
-        self.ckpt_path = hf_hub_download("csuhan/TA-Tok", ckpt_name)
+        self.ckpt_path = _resolve_or_download(
+            "csuhan/TA-Tok",
+            ckpt_name,
+            ckpt_path,
+            token=hf_token,
+            revision=hf_revision,
+        )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.scale = scale
         self.seq_length = seq_length
         self.codebook_size = codebook_size
+        encoder_path = _resolve_or_download(
+            "csuhan/TA-Tok",
+            "ta_tok.pth",
+            encoder_path,
+            token=hf_token,
+            revision=hf_revision,
+        )
+        decoder_path = _resolve_or_download(
+            "peizesun/llamagen_t2i",
+            "vq_ds16_t2i.pt",
+            decoder_path,
+            token=hf_token,
+            revision=hf_revision,
+        )
         # init tokenizer
         config = T2IConfig(
             ar_path=self.ckpt_path,
-            encoder_path = hf_hub_download("csuhan/TA-Tok", "ta_tok.pth"),
-            decoder_path = hf_hub_download("peizesun/llamagen_t2i", "vq_ds16_t2i.pt"),
+            encoder_path = encoder_path,
+            decoder_path = decoder_path,
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
             scale = self.scale,
             seq_len = self.seq_length,

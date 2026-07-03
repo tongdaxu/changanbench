@@ -21,7 +21,7 @@ codecs:
   - dcvc_dc_q0
   - dcvc_fm_q0
   - dcvc_rt_q0
-metrics: [psnr, ssim, lpips, vggt]
+metrics: [psnr, ssim, lpips, dists, fid, fvd, vggt]
 
 # ============ Datasets ============
 xiph_video:

@@ -2,7 +2,7 @@ elic_q3:
   type: cab.codec.elic.ELICImageCodec
   params:
     quality: 3
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/ELiC-ReImplemetation/ELIC_0032_ft_3980_Plateau.pth.tar
+    ckpt_path: ./ImageCodecWeights/elic/ELIC_0032_ft_3980_Plateau.pth.tar
     dataset_zero_mean: false
     metrics_zero_mean: false
     output_path: ELIC_0032_ft_3980_Plateau

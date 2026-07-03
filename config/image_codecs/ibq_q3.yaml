@@ -1,11 +1,11 @@
-ibq_q0:
+ibq_q3:
   type: cab.codec.ibq.IBQImageTokenizer
   params:
-    quality: 0
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/SEED-Voken/imagenet256_1024.ckpt
-    ibq_config: cab/models/ibq/configs/IBQ/gpu/imagenet_ibqgan_1024.yaml
+    quality: 3
+    ckpt_path: ./ImageCodecWeights/ibq/imagenet256_262144.ckpt
+    ibq_config: cab/models/ibq/configs/IBQ/gpu/imagenet_ibqgan_262144.yaml
     dataset_zero_mean: true
     metrics_zero_mean: true
-    codebook_size: 1024
+    codebook_size: 262144
     downsample_factor: 16
 

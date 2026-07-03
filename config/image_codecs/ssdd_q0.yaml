@@ -2,7 +2,7 @@ ssdd_q0:
   type: cab.codec.ssdd.SSDDImageTokenizer
   params:
     quality: 0
-    ckpt_path: /NEW_EDS/lisq/SSDD/weight/models--facebook--SSDD/snapshots/a29742837196f405d5e8af289d66356d14258bb0/F16C4/F16C4_M_256.safetensors
+    ckpt_path: ./ImageCodecWeights/ssdd/F16C4/F16C4_M_256.safetensors
     encoder_spec: f16c4
     dataset_zero_mean: true
     metrics_zero_mean: true

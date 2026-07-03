@@ -2,6 +2,6 @@ tcm_q5: # single GPU test
   type: cab.codec.tcm.TCMImageCodec
   params:
     quality: 5
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/LIC_TCM/0.05.pth.tar
+    ckpt_path: ./ImageCodecWeights/tcm/0.05.pth.tar
     dataset_zero_mean: false
     metrics_zero_mean: false

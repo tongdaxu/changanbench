@@ -21,9 +21,9 @@
 | IBQ | ./config/image_codecs/ibq_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
 | FlowMo | ./config/image_codecs/flowmo_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
 | SSDD | ./config/image_codecs/ssdd_*.yaml | /NEW_EDS/JJ_Group/lisq/home9/miniforge3/envs/illm/bin/python3.10 | Li siqi | Image | Done | 
-| H264 (?) | ? | ? | Kong han | Video | Done |
-| H265 (HM) | ? | ? | Kong han | Video | Done |
-| H266 (VVC) | ? | ? | Kong han | Video | Done |
+| H264 (AVC) | ./config/video_codecs/h264_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
+| H265 (HM) | ./config/video_codecs/h265_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
+| H266 (VVC) | ./config/video_codecs/h266_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
 | DCVC | ./config/video_codecs/dcvc_q*.yaml | ? | Shi Yicheng | Video | WIP |
 | DCVC-TCM | ./config/video_codecs/dcvc_tcm_q*.yaml | ? | Shi Yicheng | Video | WIP |
 | DCVC-HEM | ./config/video_codecs/dcvc_hem_q*.yaml | ? | Shi Yicheng | Video | WIP |
@@ -39,7 +39,7 @@
 | Metric | YAML | Owner | Mode | Status | 
 |-------|------|--------|--------|--------|
 | PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID | ./config/image_metrics.yaml | Li siqi | Image | Done | 
-| PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done | 
+| PSNR,SSIM,MSSSIM,DISTS,LPIPS,FID,FVD,VGGT | ./config/video_metrics.yaml | Kong Han, Shi Yicheng | Video | Done |
 | FLOPS,Latency,param count | ./config/image_metrics.yaml | Li siqi | Image | WIP | 
 | FLOPS,Latency,param count | ? | Kong Han | Video | TODO | 
 | 座舱VLM | ? | ? | ? | TODO |

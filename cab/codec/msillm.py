@@ -1,6 +1,7 @@
 import torch
 import os
 import numpy as np
+from pathlib import Path
 from cab.codec.abs import ImageCodecIface
 from cab.complexity import params_m, time_ms
 import pickle
@@ -9,9 +10,14 @@ def pickle_size_of(obj):
     return len(pickle.dumps(obj))
 
 class MSILLMImageCodec(ImageCodecIface):
-    def __init__(self, ckpt_name, *args, **kwargs):
+    def __init__(self, ckpt_name, torch_home=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ckpt_name = ckpt_name
+        if torch_home:
+            torch_home_path = Path(torch_home)
+            if not torch_home_path.is_absolute():
+                torch_home_path = Path(__file__).resolve().parents[2] / torch_home_path
+            os.environ["TORCH_HOME"] = str(torch_home_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = torch.hub.load("facebookresearch/NeuralCompression", self.ckpt_name).to(self.device)
         self.model.eval()

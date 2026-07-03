@@ -3,5 +3,6 @@ msillm_q4:
   params:
     quality: 4
     ckpt_name: msillm_quality_3
+    torch_home: ./ImageCodecWeights/msillm/torch_home
     dataset_zero_mean: false
     metrics_zero_mean: false

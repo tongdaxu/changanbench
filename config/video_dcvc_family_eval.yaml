@@ -1,6 +1,6 @@
 datasets: [xiph_video]
 codecs: [dcvc_rt_q0]
-metrics: [psnr, ssim, lpips]
+metrics: [psnr, ssim, lpips, dists, fid, fvd, vggt]
 
 xiph_video:
   type: cab.dataset.xiph_dataset.XiphVideoDataset

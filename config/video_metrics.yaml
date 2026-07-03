@@ -1,3 +1,12 @@
+metrics:
+  - psnr
+  - ssim
+  - lpips
+  - dists
+  - fid
+  - fvd
+  - vggt
+
 psnr:
   type: cab.evaluations.psnr.PSNRMetric
   params:
@@ -11,6 +20,10 @@ lpips:
   params:
     zero_mean: false
     network_type: alex
+dists:
+  type: cab.evaluations.dists.DISTSMetric
+  params:
+    zero_mean: false
 fid:
   type: cab.evaluations.fid.get_fid.FIDMetric
   params:

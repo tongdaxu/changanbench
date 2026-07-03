@@ -4,8 +4,8 @@ stablecodec_q0: # only support one GPU but can set large batch size
     quality: 0
     dataset_zero_mean: true
     metrics_zero_mean: true 
-    sd_path: /NEW_EDS/JJ_Group/lisq/StableCodec_Old/sd-turbo
-    elic_path: /NEW_EDS/JJ_Group/lisq/StableCodec_Old//StableCodec/elic_official.pth
-    codec_path: /NEW_EDS/JJ_Group/lisq/StableCodec_Old//StableCodec/stablecodec_ft32.pkl
+    sd_path: ./ImageCodecWeights/stablecodec/sd-turbo
+    elic_path: ./ImageCodecWeights/stablecodec/elic_official.pth
+    codec_path: ./ImageCodecWeights/stablecodec/stablecodec_ft32.pkl
     rec_path: cache/eval_stablecodec/rec_ft32_256/
     bin_path: cache/eval_stablecodec/bin_ft32_256/

@@ -2,6 +2,6 @@ hific_q1:
   type: cab.codec.hific.HiFiCImageCodec
   params:
     quality: 1
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/high-fidelity-generative-compression/hific_med.pt
+    ckpt_path: ./ImageCodecWeights/hific/hific_med.pt
     dataset_zero_mean: false
     metrics_zero_mean: false

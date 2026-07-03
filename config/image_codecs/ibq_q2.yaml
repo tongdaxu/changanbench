@@ -2,7 +2,7 @@ ibq_q2:
   type: cab.codec.ibq.IBQImageTokenizer
   params:
     quality: 2
-    ckpt_path: /NEW_EDS/JJ_Group/lisq/SEED-Voken/imagenet256_16384.ckpt
+    ckpt_path: ./ImageCodecWeights/ibq/imagenet256_16384.ckpt
     ibq_config: cab/models/ibq/configs/IBQ/gpu/imagenet_ibqgan_16384.yaml
     dataset_zero_mean: true
     metrics_zero_mean: true
