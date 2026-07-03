@@ -216,7 +216,7 @@ def load_config_files(dataset_config_path, metric_config_path, codec_config_path
         raise
 
 
-def load_video_config(config_path, metric_config_path, codec_config_path):
+def load_video_config(config_path, dataset_config_path, metric_config_path, codec_config_path):
     """Load video experiment config and merge split codec/metric definitions."""
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Video config not found: {config_path}")
@@ -227,7 +227,7 @@ def load_video_config(config_path, metric_config_path, codec_config_path):
 
     merged = dict(base)
     component_cfg = load_config_files(
-        config_path,
+        dataset_config_path,
         metric_config_path,
         codec_config_path,
         resolve=False,
@@ -236,14 +236,14 @@ def load_video_config(config_path, metric_config_path, codec_config_path):
     merged.update({k: v for k, v in component_dict.items() if k not in {"datasets", "codecs", "metrics"}})
 
     missing = []
-    for key in list(merged.get("codecs", [])) + list(merged.get("metrics", [])):
+    for key in list(merged.get("datasets", [])) + list(merged.get("codecs", [])) + list(merged.get("metrics", [])):
         if key not in merged:
             missing.append(key)
     if missing:
         raise KeyError(
             "Missing video component definitions: "
             + ", ".join(missing)
-            + ". Check --video_codec_config and --video_metric_config."
+            + ". Check --video_dataset_config, --video_codec_config, and --video_metric_config."
         )
 
     return OmegaConf.create(merged)
@@ -259,7 +259,12 @@ def main():
     # Load config
     if is_video_benchmark:
         if args.config:
-            config = load_video_config(args.config, args.video_metric_config, args.video_codec_config)
+            config = load_video_config(
+                args.config,
+                args.video_dataset_config,
+                args.video_metric_config,
+                args.video_codec_config,
+            )
         else:
             config = load_config_files(
                 args.video_dataset_config,

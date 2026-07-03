@@ -50,7 +50,7 @@
 | Kodak | config/image_datasets/kodak_dataset.yaml | Li Siqi | Image | Done | 
 | CLIC 2020 | config/image_datasets/clic_dataset.yaml | Li Siqi | Image | Done | 
 | ImageNet Val | config/image_datasets/imagenet_dataset.yaml | Li Siqi | Image | Done | 
-| XIPH | ? | Kong Han | Video | Done | 
+| XIPH | config/video_datasets/xiph_dataset.yaml | Kong Han | Video | Done |
 | HEVC CTC | config/video_datasets/hevc_ctc_dataset.yaml | Kong Han | Video | Done |
 | ScanNet | config/video_datasets/scannet_dataset.yaml | Shi Yicheng | Video | WIP | 
 | UCO3D | config/video_datasets/uco3d_dataset.yaml | Shi Yicheng | Video | WIP | 
@@ -60,7 +60,7 @@
 ## Infrastructure
 | Item | Artifact | Owner | Status |
 |-------|------|--------|--------|
-| Download image codec weights | ./tools/download_weights/download_*_weights.py -> ./ImageCodecWeights/<codec>/ | Li Siqi | Done |
+| Download image codec weights | ./tools/download_weights/download_*_weights.py -> ./ImageCodecWeights/<codec>/ | Kong Han | Done |
 | Download dataset | ? | ? | ? |
 | Docker | ? | ? | ? |
 

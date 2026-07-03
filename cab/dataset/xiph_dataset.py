@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import urllib.request
 import warnings
+import os
+import time
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
@@ -37,6 +39,7 @@ class VideoSourceInfo:
 
 
 _BASE = "https://media.xiph.org/video/derf/y4m"
+_DOWNLOAD_LOCK_TIMEOUT_SECONDS = 60 * 60
 
 
 def _s(name: str, w: int, h: int, fps: int | tuple, frames: int | None = None) -> XiphSample:
@@ -213,9 +216,41 @@ def download_sample(
     dest = dest_dir / filename
     if dest.exists() and not overwrite:
         return dest
+
+    lock_path = dest.with_suffix(dest.suffix + ".lock")
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+        owns_lock = True
+    except FileExistsError:
+        owns_lock = False
+
+    if not owns_lock:
+        start = time.time()
+        while lock_path.exists():
+            if dest.exists():
+                return dest
+            if time.time() - start > _DOWNLOAD_LOCK_TIMEOUT_SECONDS:
+                raise TimeoutError(f"Timed out waiting for Xiph download lock: {lock_path}")
+            time.sleep(1.0)
+        if dest.exists():
+            return dest
+        return download_sample(sample, dest_dir, overwrite=overwrite)
+
+    tmp_dest = dest.with_suffix(dest.suffix + ".tmp")
     print(f"Downloading {filename} ...", flush=True)
-    urllib.request.urlretrieve(sample.url, dest)
-    return dest
+    try:
+        urllib.request.urlretrieve(sample.url, tmp_dest)
+        os.replace(tmp_dest, dest)
+        return dest
+    finally:
+        if tmp_dest.exists():
+            tmp_dest.unlink()
+        if owns_lock:
+            try:
+                lock_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def download_samples(

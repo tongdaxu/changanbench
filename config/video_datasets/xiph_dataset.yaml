@@ -1,0 +1,11 @@
+xiph_video:
+  type: cab.dataset.xiph_dataset.XiphVideoDataset
+  params:
+    samples:
+      - bus_cif
+    root: ./cache/xiph
+    clip_len: 32
+    image_size: 256
+    zero_mean: false
+    sampling: uniform
+    download: true

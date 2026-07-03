@@ -23,18 +23,6 @@ codecs:
   - dcvc_rt_q0
 metrics: [psnr, ssim, lpips, dists, fid, fvd, vggt]
 
-# ============ Datasets ============
-xiph_video:
-  type: cab.dataset.xiph_dataset.XiphVideoDataset
-  params:
-    samples:
-    - bus_cif
-    root: ./cache/xiph
-    clip_len: 32
-    image_size: 256
-    zero_mean: false
-    sampling: uniform
-    download: true
-
+# Video dataset definitions live in config/video_datasets/.
 # Video codec definitions live in config/video_codecs/.
 # Video metric definitions live in config/video_metrics.yaml.
