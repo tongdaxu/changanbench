@@ -51,18 +51,18 @@
 | CLIC 2020 | config/image_datasets/clic_dataset.yaml | Li Siqi | Image | Done | 
 | ImageNet Val | config/image_datasets/imagenet_dataset.yaml | Li Siqi | Image | Done | 
 | XIPH | ? | Kong Han | Video | Done | 
-| HEVC CTC | ? | Kong Han | Video | TODO | 
+| HEVC CTC | config/video_datasets/hevc_ctc_dataset.yaml | Kong Han | Video | Done |
 | ScanNet | config/video_datasets/scannet_dataset.yaml | Shi Yicheng | Video | WIP | 
 | UCO3D | config/video_datasets/uco3d_dataset.yaml | Shi Yicheng | Video | WIP | 
 | 长安座舱 | ? | ? | ? | TODO | 
 | 长安道路 | ? | ? | ? | TODO | 
 
 ## Infrastructure
-| Dataset | Owner | Status | 
-|-------|------|--------| 
-| Download weights | ? | ? |
-| Download dataset | ? | ? |
-| Docker | ? | ? |
+| Item | Artifact | Owner | Status |
+|-------|------|--------|--------|
+| Download image codec weights | ./tools/download_weights/download_*_weights.py -> ./ImageCodecWeights/<codec>/ | Li Siqi | Done |
+| Download dataset | ? | ? | ? |
+| Docker | ? | ? | ? |
 
 ## Results
 * https://1drv.ms/x/c/1fe0643df5e78ab9/IQDdbRV4uGOlTag-fS7YQYexAemepzUeOoAmYtijVN2ZWiw?e=pJzeqe
