@@ -24,16 +24,16 @@
 | H264 (AVC) | ./config/video_codecs/h264_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
 | H265 (HM) | ./config/video_codecs/h265_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
 | H266 (VVC) | ./config/video_codecs/h266_q*.yaml | ./tools/ffmpeg/bin/ffmpeg | Kong han | Video | Done |
-| DCVC | ./config/video_codecs/dcvc_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-TCM | ./config/video_codecs/dcvc_tcm_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-HEM | ./config/video_codecs/dcvc_hem_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-DC | ./config/video_codecs/dcvc_dc_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-FM | ./config/video_codecs/dcvc_fm_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-RT | ./config/video_codecs/dcvc_rt_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DHVC | ./config/video_codecs/dhvc_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-B | ./config/video_codecs/dcvc_b_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| DCVC-SDD | ./config/video_codecs/dcvc_sdd_q*.yaml | ? | Shi Yicheng | Video | WIP |
-| BRHVC | ./config/video_codecs/brhvc_q*.yaml | ? | Shi Yicheng | Video | WIP |
+| DCVC | ./config/video_codecs/dcvc_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc/bin/python3.8 | Shi Yicheng | Video | WIP |
+| DCVC-TCM | ./config/video_codecs/dcvc_tcm_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_tcm/bin/python3.6 | Shi Yicheng | Video | WIP |
+| DCVC-HEM | ./config/video_codecs/dcvc_hem_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_hem/bin/python3.8 | Shi Yicheng | Video | WIP |
+| DCVC-DC | ./config/video_codecs/dcvc_dc_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_dc/bin/python3.8 | Shi Yicheng | Video | WIP |
+| DCVC-FM | ./config/video_codecs/dcvc_fm_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_fm/bin/python3.10 | Shi Yicheng | Video | WIP |
+| DCVC-RT | ./config/video_codecs/dcvc_rt_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_rt/bin/python3.12 | Shi Yicheng | Video | WIP |
+| DHVC | ./config/video_codecs/dhvc_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dhvc/bin/python3.8 | Shi Yicheng | Video | WIP |
+| DCVC-B | ./config/video_codecs/dcvc_b_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_b/bin/python3.8 | Shi Yicheng | Video | WIP |
+| DCVC-SDD | ./config/video_codecs/dcvc_sdd_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/dcvc_sdd/bin/python3.8 | Shi Yicheng | Video | WIP |
+| BRHVC | ./config/video_codecs/brhvc_q*.yaml | /NEW_EDS/JJ_Group/shiyc2603/miniconda3/envs/brhvc/bin/python3.10 | Shi Yicheng | Video | WIP |
 
 ## Metric
 | Metric | YAML | Owner | Mode | Status | 

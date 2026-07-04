@@ -1,6 +1,7 @@
 dcvc_tcm_q0:
   type: cab.codec.dcvc_family.DCVCTCMVideoCodec
   params:
+    python_path: ${oc.env:DCVC_TCM_PYTHON}
     i_frame_model_paths:
     - checkpoints/dcvc_family/intra_psnr_TMM_q1.pth.tar
     model_paths:

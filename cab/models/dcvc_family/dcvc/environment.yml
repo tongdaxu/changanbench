@@ -1,0 +1,22 @@
+name: dcvc
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.8
+  - pip
+  - pip:
+      - --find-links https://download.pytorch.org/whl/torch_stable.html
+      - pip==23.3.1
+      - setuptools==68.2.2
+      - wheel==0.41.2
+      - numpy==1.21.6
+      - scipy==1.7.3
+      - matplotlib==3.5.3
+      - Pillow==9.5.0
+      - tqdm==4.66.1
+      - torch==1.7.1+cu110
+      - torchvision==0.8.2+cu110
+      - torchaudio==0.7.2
+      - pytorch-msssim==0.2.0

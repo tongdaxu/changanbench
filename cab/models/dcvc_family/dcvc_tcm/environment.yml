@@ -1,0 +1,24 @@
+name: dcvc_tcm
+
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+
+dependencies:
+  - python=3.6
+  - pip
+  - pytorch=1.10.0
+  - torchvision=0.11.0
+  - torchaudio=0.10.0
+  - cudatoolkit=11.1
+  - pip:
+      - pip==21.3.1
+      - setuptools==59.6.0
+      - wheel==0.37.1
+      - numpy==1.19.5
+      - scipy==1.5.4
+      - matplotlib==3.3.4
+      - Pillow==8.4.0
+      - tqdm==4.62.3
+      - pytorch-msssim==0.2.0

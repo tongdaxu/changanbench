@@ -1,6 +1,7 @@
 dcvc_q0:
   type: cab.codec.dcvc_family.DCVCVideoCodec
   params:
+    python_path: ${oc.env:DCVC_PYTHON}
     i_frame_model_paths:
     - checkpoints/dcvc_family/cheng2020-anchor-3-e49be189.pth.tar
     model_paths:

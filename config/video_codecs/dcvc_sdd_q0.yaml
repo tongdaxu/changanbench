@@ -1,6 +1,7 @@
 dcvc_sdd_q0:
   type: cab.codec.dcvc_sdd.DCVCSDDVideoCodec
   params:
+    python_path: ${oc.env:DCVC_SDD_PYTHON}
     i_frame_model_path: checkpoints/neural_video_codecs/shared/cvpr2023_image_psnr.pth.tar
     p_frame_model_path: checkpoints/neural_video_codecs/dcvc_sdd/dcvc_sdd_psnr.pth.tar
     rate_idx: 0

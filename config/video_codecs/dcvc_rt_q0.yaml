@@ -1,6 +1,7 @@
 dcvc_rt_q0:
   type: cab.codec.dcvc_family.DCVCRTVideoCodec
   params:
+    python_path: ${oc.env:DCVC_RT_PYTHON}
     model_path_i: checkpoints/dcvc_family/cvpr2025_image.pth.tar
     model_path_p: checkpoints/dcvc_family/cvpr2025_video.pth.tar
     qp_i: 0

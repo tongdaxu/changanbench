@@ -1,6 +1,7 @@
 dcvc_dc_q0:
   type: cab.codec.dcvc_family.DCVCDCVideoCodec
   params:
+    python_path: ${oc.env:DCVC_DC_PYTHON}
     i_frame_model_path: checkpoints/dcvc_family/cvpr2023_image_psnr.pth.tar
     p_frame_model_path: checkpoints/dcvc_family/cvpr2023_video_psnr.pth.tar
     i_frame_q_index: 0

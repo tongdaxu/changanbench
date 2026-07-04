@@ -1,6 +1,7 @@
 dhvc_q0:
   type: cab.codec.dhvc.DHVCVideoCodec
   params:
+    python_path: ${oc.env:DHVC_PYTHON}
     checkpoint_path: checkpoints/neural_video_codecs/dhvc/dhvc_q0.pth
     gop: 32
     device: cuda
