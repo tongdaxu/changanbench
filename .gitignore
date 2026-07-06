@@ -7,6 +7,7 @@ cache
 .vscode
 *.txt
 *.out
+*.whl
 !cab/models/dcvc_family/**/CMakeLists.txt
 !cab/models/dcvc_family/**/LICENSE.txt
 !cab/models/dcvc_family/**/NOTICE*.txt
