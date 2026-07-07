@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 
 
 class VGGTMetric:
@@ -19,11 +20,13 @@ class VGGTMetric:
         device: str = "cuda",
         score: str = "camera_center_error_mean",
         mode: str = "crop",
+        zero_mean: bool | None = None,
     ):
         self.ckpt_path = ckpt_path
         self.device = device
         self.score = score
         self.mode = mode
+        self.zero_mean = zero_mean
         self.model, self.load_and_preprocess_images, self.pose_to_camera = self._load_vggt()
         self.model = self.model.to(device)
         state = torch.load(ckpt_path, map_location=device)
@@ -47,6 +50,7 @@ class VGGTMetric:
     def _predict(self, video: torch.Tensor) -> dict:
         video = video.detach().clamp(0.0, 1.0).to(self.device)
         images = video.permute(1, 0, 2, 3).unsqueeze(0)
+        images = self._prepare_images(images)
         with torch.inference_mode():
             preds = self.model(images)
         extrinsic, intrinsic = self.pose_to_camera(preds["pose_enc"], images.shape[-2:])
@@ -54,6 +58,30 @@ class VGGTMetric:
             "extrinsic": extrinsic[0],
             "intrinsic": intrinsic[0],
         }
+
+    def _prepare_images(self, images: torch.Tensor) -> torch.Tensor:
+        patch_size = 14
+        height, width = images.shape[-2:]
+        if height < patch_size or width < patch_size:
+            raise ValueError(f"VGGT input is too small: {height}x{width}")
+        if height % patch_size == 0 and width % patch_size == 0:
+            return images
+        if self.mode == "crop":
+            target_h = height // patch_size * patch_size
+            target_w = width // patch_size * patch_size
+            top = (height - target_h) // 2
+            left = (width - target_w) // 2
+            return images[..., top : top + target_h, left : left + target_w]
+        if self.mode == "pad":
+            target_h = (height + patch_size - 1) // patch_size * patch_size
+            target_w = (width + patch_size - 1) // patch_size * patch_size
+            pad_h = target_h - height
+            pad_w = target_w - width
+            return F.pad(
+                images,
+                (pad_w // 2, pad_w - pad_w // 2, pad_h // 2, pad_h - pad_h // 2),
+            )
+        raise ValueError(f"Unsupported VGGT preprocessing mode: {self.mode}")
 
     def _camera_center_error(self, ext_ref: torch.Tensor, ext_test: torch.Tensor) -> torch.Tensor:
         centers_ref = self._camera_centers(ext_ref)

@@ -203,22 +203,39 @@ class SequenceVideoDataset(VisionDataset):
         if not cap.isOpened():
             raise FileNotFoundError(f"Could not open video: {video_path}")
 
-        frames = []
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if frame_count <= 0:
+            cap.release()
+            raise ValueError(f"Could not determine frame count for {video_path}")
+        indices = self._sample_indices(frame_count)
+        selected_indices = set(indices)
+        selected_frames = {}
+        last_index = max(indices)
         try:
+            frame_index = 0
             while True:
                 ok, frame = cap.read()
                 if not ok:
                     break
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frames.append(torch.from_numpy(frame).permute(2, 0, 1).float().div(255.0))
+                if frame_index in selected_indices:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    tensor = torch.from_numpy(frame).permute(2, 0, 1).float().div(255.0)
+                    if self.image_size is not None:
+                        tensor = self._resize_and_center_crop_tensor(tensor)
+                    selected_frames[frame_index] = tensor
+                if frame_index >= last_index:
+                    break
+                frame_index += 1
         finally:
             cap.release()
 
-        if len(frames) < self.clip_len:
-            raise ValueError(f"Need {self.clip_len} frames, found {len(frames)} in {video_path}")
-        frames = [frames[idx] for idx in self._sample_indices(len(frames))]
-        if self.image_size is not None:
-            frames = [self._resize_and_center_crop_tensor(frame) for frame in frames]
+        missing = [index for index in indices if index not in selected_frames]
+        if missing:
+            raise ValueError(
+                f"Could not decode {len(missing)} sampled frames from {video_path}; "
+                f"first missing index: {missing[0]}"
+            )
+        frames = [selected_frames[index] for index in indices]
         return torch.stack(frames, dim=1).contiguous()
 
     def _list_frames(self, folder: Path) -> List[Path]:

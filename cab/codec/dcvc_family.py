@@ -215,9 +215,7 @@ class _DCVCSubprocessCodec(VideoCodecIface):
             return False
         name = path.name
         return (
-            "decoded" in parts
-            or "recon" in parts
-            or "recon_bin" in parts
+            any(part.startswith("decoded") or part.startswith("recon") for part in parts)
             or name.startswith("recon_frame_")
             or name.startswith("im")
         )
