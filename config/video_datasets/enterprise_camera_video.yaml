@@ -1,0 +1,15 @@
+enterprise_camera_video:
+  type: cab.dataset.enterprise_camera_video.EnterpriseCameraVideoDataset
+  params:
+    root: ${oc.env:ENTERPRISE_VIDEO_ROOT}
+    image_subdir: ori_image
+    include_cameras:
+      - ac_*
+      - sc_*
+    exclude_cameras: null
+    clip_len: 33
+    clip_stride: 32
+    max_clips_per_camera: null
+    zero_mean: false
+    timestamp_tolerance_ms: 10
+    strict: true
