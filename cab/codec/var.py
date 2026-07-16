@@ -69,7 +69,7 @@ class VARImageTokenizer(ImageCodecIface):
     def __init__(
         self,
         quality,
-        vae_ckpt="./ImageCodecWeights/var/vae_ch160v4096z32.pth",
+        vae_ckpt="/data9-2/BenchmarkData/weights/var/vae_ch160v4096z32.pth",
         model_depth=16,
         hf_token=None,
         hf_revision=None,

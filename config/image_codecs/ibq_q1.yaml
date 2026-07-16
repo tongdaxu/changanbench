@@ -2,7 +2,7 @@ ibq_q1:
   type: cab.codec.ibq.IBQImageTokenizer
   params:
     quality: 1
-    ckpt_path: ./ImageCodecWeights/ibq/imagenet256_8192.ckpt
+    ckpt_path: /data9-2/BenchmarkData/weights/ibq/imagenet256_8192.ckpt
     ibq_config: cab/models/ibq/configs/IBQ/gpu/imagenet_ibqgan_8192.yaml
     dataset_zero_mean: true
     metrics_zero_mean: true

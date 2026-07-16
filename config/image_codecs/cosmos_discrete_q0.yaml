@@ -2,8 +2,8 @@ cosmos_discrete_q0:
   type: cab.codec.cosmos.CosmosImageTokenizer
   params:
     quality: 0
-    checkpoint_enc: ./ImageCodecWeights/cosmos/Cosmos-0.1-Tokenizer-DI16x16/encoder.jit
-    checkpoint_dec: ./ImageCodecWeights/cosmos/Cosmos-0.1-Tokenizer-DI16x16/decoder.jit
+    checkpoint_enc: /data9-2/BenchmarkData/weights/cosmos/Cosmos-0.1-Tokenizer-DI16x16/encoder.jit
+    checkpoint_dec: /data9-2/BenchmarkData/weights/cosmos/Cosmos-0.1-Tokenizer-DI16x16/decoder.jit
     dataset_zero_mean: true
     metrics_zero_mean: true
     downsample_factor: 16

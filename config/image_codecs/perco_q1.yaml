@@ -2,6 +2,6 @@ perco_q1: #A100 to be validated
   type: cab.codec.perco.PerCoImageCodec
   params:
     quality: 1
-    ckpt_path: ./ImageCodecWeights/perco/Perco_0.0313_model/cmvl_2024_full_train
+    ckpt_path: /data9-2/BenchmarkData/weights/perco/Perco_0.0313_model/cmvl_2024_full_train
     dataset_zero_mean: false
     metrics_zero_mean: false

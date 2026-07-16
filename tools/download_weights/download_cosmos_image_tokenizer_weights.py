@@ -3,7 +3,7 @@
 The script downloads the two JIT image tokenizer checkpoints referenced by
 config/image_codecs/cosmos_discrete_q*.yaml into:
 
-    ImageCodecWeights/cosmos/<model-name>/
+    /data9-2/BenchmarkData/weights/cosmos/<model-name>/
 
 Use HF_TOKEN when the Hugging Face repository requires authentication.
 """
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Download Cosmos ImageTokenizer weights")
     parser.add_argument(
         "--output-root",
-        default="ImageCodecWeights",
+        default="/data9-2/BenchmarkData/weights",
         help="Root directory for image codec weights.",
     )
     parser.add_argument(

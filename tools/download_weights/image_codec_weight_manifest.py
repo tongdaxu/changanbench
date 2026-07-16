@@ -10,7 +10,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "ImageCodecWeights"
+DEFAULT_OUTPUT_ROOT = Path("/data9-2/BenchmarkData/weights")
 
 
 def _entry(target: str, *, legacy: str | None = None, url: str | None = None) -> dict[str, str | None]:

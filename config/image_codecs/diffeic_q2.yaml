@@ -2,8 +2,8 @@ diffeic_q2:
   type: cab.codec.diffeic.DiffEICImageCodec
   params:
     quality: 2
-    ckpt_sd: ./ImageCodecWeights/diffeic/v2-1_512-ema-pruned.ckpt
-    ckpt_lc: ./ImageCodecWeights/diffeic/1_2_4/lc.ckpt
+    ckpt_sd: /data9-2/BenchmarkData/weights/diffeic/v2-1_512-ema-pruned.ckpt
+    ckpt_lc: /data9-2/BenchmarkData/weights/diffeic/1_2_4/lc.ckpt
     dataset_zero_mean: false
     metrics_zero_mean: false
     steps: 50

@@ -2,7 +2,7 @@ var_q0:
   type: cab.codec.var.VARImageTokenizer
   params:
     quality: 0
-    vae_ckpt: ./ImageCodecWeights/var/vae_ch160v4096z32.pth
+    vae_ckpt: /data9-2/BenchmarkData/weights/var/vae_ch160v4096z32.pth
     model_depth: 16
     dataset_zero_mean: true
     metrics_zero_mean: true

@@ -2,6 +2,6 @@ MLIC++_q4:
   type: cab.codec.MLICPlusPlus.MLICPlusPlusImageCodec
   params:
     quality: 4
-    ckpt_path: ./ImageCodecWeights/mlicpp/mlicpp_new_mse_q5.pth.tar
+    ckpt_path: /data9-2/BenchmarkData/weights/mlicpp/mlicpp_new_mse_q5.pth.tar
     dataset_zero_mean: false
     metrics_zero_mean: false

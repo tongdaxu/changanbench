@@ -60,7 +60,7 @@
 ## Infrastructure
 | Item | Artifact | Owner | Status |
 |-------|------|--------|--------|
-| Download image codec weights | ./tools/download_weights/download_*_weights.py -> ./ImageCodecWeights/<codec>/ | Kong Han | Done |
+| Download image codec weights | ./tools/download_weights/download_*_weights.py -> /data9-2/BenchmarkData/weights/<codec>/ | Kong Han | Done |
 | Download video datasets | XIPH and HEVC CTC via ./config/video_datasets/*.yaml | Kong Han | Done |
 | Docker | ? | ? | ? |
 

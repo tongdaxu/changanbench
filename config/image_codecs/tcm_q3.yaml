@@ -2,6 +2,6 @@ tcm_q3: # single GPU test
   type: cab.codec.tcm.TCMImageCodec
   params:
     quality: 3
-    ckpt_path: ./ImageCodecWeights/tcm/0.013.pth.tar
+    ckpt_path: /data9-2/BenchmarkData/weights/tcm/0.013.pth.tar
     dataset_zero_mean: false
     metrics_zero_mean: false

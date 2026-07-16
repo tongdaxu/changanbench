@@ -2,7 +2,7 @@ infinity_q1:
   type: cab.codec.infinity.InfinityImageTokenizer
   params:
     quality: 1
-    vqgan_ckpt: ./ImageCodecWeights/infinity/infinity_vae_d24.pth
+    vqgan_ckpt: /data9-2/BenchmarkData/weights/infinity/infinity_vae_d24.pth
     codebook_dim: 24
     dataset_zero_mean: true
     metrics_zero_mean: true

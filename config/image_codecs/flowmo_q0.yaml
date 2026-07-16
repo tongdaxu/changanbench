@@ -2,7 +2,7 @@ FlowMo_q0:
   type: cab.codec.flowmo.FlowMoImageTokenizer
   params:
     quality: 0
-    ckpt_path: ./ImageCodecWeights/flowmo/flowmo_lo.pth
+    ckpt_path: /data9-2/BenchmarkData/weights/flowmo/flowmo_lo.pth
     dataset_zero_mean: true
     metrics_zero_mean: true
     context_dim: 18

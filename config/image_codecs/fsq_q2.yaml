@@ -2,7 +2,7 @@ fsq_q2:
   type: cab.codec.fsq.FSQImageTokenizer
   params:
     quality: 2
-    ckpt_path: ./ImageCodecWeights/fsq/fsq_q2/epoch=000003.ckpt
+    ckpt_path: /data9-2/BenchmarkData/weights/fsq/fsq_q2/epoch=000003.ckpt
     dataset_zero_mean: true
     metrics_zero_mean: true
     base: cab/models/fsq/sd3unet_fsq_0.25bpp.yaml

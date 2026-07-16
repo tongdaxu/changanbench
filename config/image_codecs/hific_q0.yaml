@@ -2,6 +2,6 @@ hific_q0:
   type: cab.codec.hific.HiFiCImageCodec
   params:
     quality: 0
-    ckpt_path: ./ImageCodecWeights/hific/hific_low.pt
+    ckpt_path: /data9-2/BenchmarkData/weights/hific/hific_low.pt
     dataset_zero_mean: true
     metrics_zero_mean: false
