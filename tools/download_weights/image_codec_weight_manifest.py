@@ -156,7 +156,7 @@ LOCAL_OR_URL_CODEC_FILES: dict[str, list[dict[str, Any]]] = {
         _entry("tatok/vq_ds16_t2i.pt", search_roots=["/NEW_EDS/lisq/LlamaGen-main", "/NEW_EDS/lisq/pytorch-image-tokenizer-master", "/NEW_EDS/lisq/pytorch-image-tokenizer-master2", "/NEW_EDS/lisq/VAR"]),
     ],
     "var": [
-        _entry("var/vae_ch160v4096z32.pth", search_roots=["/NEW_EDS/lisq/VAR"]),
+        _entry("var/vae_ch160v4096z32.pth", legacy="/NEW_EDS/lisq/VAR/vae_ch160v4096z32.pth"),
     ],
 }
 
@@ -231,6 +231,7 @@ def main(selected_codec: str | None = None) -> None:
     parser.add_argument("--strict-private", action="store_true", help="Fail when private/local-only files are missing, even for all-codec runs.")
     parser.add_argument("--public-only", action="store_true", help="Only download public Hugging Face/torch.hub weights; skip private/local staging.")
     parser.add_argument("--local-only", action="store_true", help="Only stage local files from /NEW_EDS-style paths; do not use network downloads.")
+    parser.add_argument("--search-local", action="store_true", help="Search configured local directories for files that do not have exact source paths.")
     parser.add_argument("--dry-run", action="store_true", help="Print planned local copies/downloads without writing files or using the network.")
     parser.add_argument("--force", action="store_true", help="Overwrite existing target files.")
     args = parser.parse_args()
@@ -276,6 +277,7 @@ def download_codec(codec: str, output_root: Path, args: argparse.Namespace) -> N
             url_base=args.url_base,
             force=args.force,
             dry_run=args.dry_run,
+            allow_search=args.search_local,
         )
 
     if args.local_only:
@@ -407,6 +409,7 @@ def stage_local_or_url_files(
     url_base: str | None,
     force: bool,
     dry_run: bool,
+    allow_search: bool,
 ) -> list[str]:
     missing: list[str] = []
     for item in entries:
@@ -416,7 +419,7 @@ def stage_local_or_url_files(
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
 
-        source = resolve_local_source(item, source_root, lab_source_root)
+        source = resolve_local_source(item, source_root, lab_source_root, allow_search=allow_search)
         if source and source.exists():
             if dry_run:
                 print(f"would copy {source} -> {target}")
@@ -441,7 +444,13 @@ def stage_local_or_url_files(
     return missing
 
 
-def resolve_local_source(item: dict[str, Any], source_root: Path | None, lab_source_root: Path) -> Path | None:
+def resolve_local_source(
+    item: dict[str, Any],
+    source_root: Path | None,
+    lab_source_root: Path,
+    *,
+    allow_search: bool,
+) -> Path | None:
     if source_root is not None:
         candidate = source_root / str(item["target"])
         if candidate.exists():
@@ -451,9 +460,10 @@ def resolve_local_source(item: dict[str, Any], source_root: Path | None, lab_sou
         if candidate.exists():
             return candidate
 
-    found = search_local_source(item, lab_source_root)
-    if found is not None:
-        return found
+    if allow_search:
+        found = search_local_source(item, lab_source_root)
+        if found is not None:
+            return found
 
     return None
 
