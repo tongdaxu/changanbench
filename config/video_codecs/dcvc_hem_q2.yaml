@@ -1,14 +1,15 @@
-dcvc_hem_q0:
+dcvc_hem_q2:
   type: cab.codec.dcvc_family.DCVCHEMVideoCodec
   params:
     python_path: ${oc.env:DCVC_HEM_PYTHON}
     i_frame_model_path: checkpoints/dcvc_family/acmmm2022_image_psnr.pth.tar
     model_path: checkpoints/dcvc_family/acmmm2022_video_psnr.pth.tar
-    i_frame_q_scale: 1.5409280061721802
-    p_frame_y_q_scale: 1.2383171319961548
-    p_frame_mv_y_q_scale: 1.1843925714492798
+    i_frame_q_scale: 0.7293218970298767
+    p_frame_y_q_scale: 0.7134408354759216
+    p_frame_mv_y_q_scale: 1.0107232332229614
     rate_num: 1
     device: cuda
     intra_period: 32
     dataset_zero_mean: false
     metrics_zero_mean: false
+

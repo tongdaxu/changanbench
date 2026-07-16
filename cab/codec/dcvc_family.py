@@ -385,6 +385,7 @@ class DCVCDCVideoCodec(_DCVCSubprocessCodec):
         p_frame_model_path: str,
         i_frame_q_index: int | None = None,
         p_frame_q_index: int | None = None,
+        q_in_ckpt: bool = False,
         rate_num: int = 4,
         calc_ssim: bool = False,
         **kwargs,
@@ -394,6 +395,7 @@ class DCVCDCVideoCodec(_DCVCSubprocessCodec):
         self.p_frame_model_path = _expand_path(p_frame_model_path)
         self.i_frame_q_index = i_frame_q_index
         self.p_frame_q_index = p_frame_q_index
+        self.q_in_ckpt = bool(q_in_ckpt)
         self.rate_num = int(rate_num)
         self.calc_ssim = bool(calc_ssim)
 
@@ -404,6 +406,7 @@ class DCVCDCVideoCodec(_DCVCSubprocessCodec):
             "--i_frame_model_path", self.i_frame_model_path,
             "--p_frame_model_path", self.p_frame_model_path,
             "--rate_num", str(self.rate_num),
+            "--q_in_ckpt", _bool_arg(self.q_in_ckpt),
             "--yuv420", "false",
             "--calc_ssim", _bool_arg(self.calc_ssim),
             "--stream_path", str(tmp_dir / "streams"),

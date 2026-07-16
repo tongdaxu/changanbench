@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument('--i_frame_model_path', type=str)
     parser.add_argument('--p_frame_model_path',  type=str)
     parser.add_argument('--rate_num', type=int, default=4)
+    parser.add_argument('--q_in_ckpt', type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument('--i_frame_q_indexes', type=int, nargs="+")
     parser.add_argument('--p_frame_q_indexes', type=int, nargs="+")
     parser.add_argument("--force_intra", type=str2bool, nargs='?', const=True, default=False)
@@ -356,7 +357,10 @@ def main():
     q_in_ckpt = False
     if args.i_frame_q_indexes is not None:
         assert len(args.i_frame_q_indexes) == rate_num
+        assert not args.q_in_ckpt or all(0 <= index < len(i_frame_q_scale_enc)
+                                         for index in args.i_frame_q_indexes)
         i_frame_q_indexes = args.i_frame_q_indexes
+        q_in_ckpt = args.q_in_ckpt
     elif len(i_frame_q_scale_enc) == rate_num:
         assert rate_num == 4
         q_in_ckpt = True

@@ -1,12 +1,13 @@
-brhvc_q0:
-  type: cab.codec.brhvc.BRHVCVideoCodec
+dcvc_b_q1:
+  type: cab.codec.dcvc_b.DCVCBVideoCodec
   params:
-    python_path: ${oc.env:BRHVC_PYTHON}
+    python_path: ${oc.env:DCVC_B_PYTHON}
     i_frame_model_path: checkpoints/neural_video_codecs/shared/cvpr2023_image_psnr.pth.tar
-    b_frame_model_path: checkpoints/neural_video_codecs/brhvc/brhvc_model_weights.pth
-    rate_idx: 0
+    b_frame_model_path: checkpoints/neural_video_codecs/dcvc_b/dcvc_b_psnr.pth.tar
+    rate_idx: 1
     q_in_ckpt: true
     gop: 32
     device: cuda
     dataset_zero_mean: false
     metrics_zero_mean: false
+

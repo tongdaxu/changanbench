@@ -5,6 +5,7 @@ dcvc_b_q0:
     i_frame_model_path: checkpoints/neural_video_codecs/shared/cvpr2023_image_psnr.pth.tar
     b_frame_model_path: checkpoints/neural_video_codecs/dcvc_b/dcvc_b_psnr.pth.tar
     rate_idx: 0
+    q_in_ckpt: true
     gop: 32
     device: cuda
     dataset_zero_mean: false

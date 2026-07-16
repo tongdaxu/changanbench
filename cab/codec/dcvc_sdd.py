@@ -24,6 +24,7 @@ class DCVCSDDVideoCodec(ExternalVideoCodec):
         i_frame_model_path: str,
         p_frame_model_path: str,
         rate_idx: int = 0,
+        q_in_ckpt: bool = False,
         gop: int = 32,
         **kwargs,
     ):
@@ -31,6 +32,7 @@ class DCVCSDDVideoCodec(ExternalVideoCodec):
         self.i_frame_model_path = expand_project_path(i_frame_model_path)
         self.p_frame_model_path = expand_project_path(p_frame_model_path)
         self.rate_idx = int(rate_idx)
+        self.q_in_ckpt = bool(q_in_ckpt)
         self.gop = int(gop)
 
     def _required_paths(self) -> list[str]:
@@ -48,6 +50,7 @@ class DCVCSDDVideoCodec(ExternalVideoCodec):
             "--output-json", str(output_json),
             "--device", self.device,
             "--rate-idx", str(self.rate_idx),
+            "--q-in-ckpt", "true" if self.q_in_ckpt else "false",
             "--gop", str(self.gop),
         ]
 
@@ -62,6 +65,7 @@ def parse_args():
     parser.add_argument("--output-json", required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--rate-idx", type=int, default=0)
+    parser.add_argument("--q-in-ckpt", choices=("true", "false"), default="false")
     parser.add_argument("--gop", type=int, default=32)
     return parser.parse_args()
 
@@ -105,6 +109,7 @@ def run_codec(args, config_path: Path, decoded_root: Path, result_json: Path, st
         "--i_frame_model_path", args.i_frame_model,
         "--p_frame_model_path", args.p_frame_model,
         "--rate_num", "1",
+        "--q_in_ckpt", args.q_in_ckpt,
         "--i_frame_q_indexes", str(args.rate_idx),
         "--p_frame_q_indexes", str(args.rate_idx),
         "--test_config", str(config_path),
