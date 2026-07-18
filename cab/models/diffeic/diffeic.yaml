@@ -15,7 +15,7 @@ params:
   monitor: val/loss_simple_ema
   scale_factor: 0.18215
   use_ema: False
-  sync_path: /NEW_EDS/JJ_Group/lisq/DiffEIC/weight/v2-1_512-ema-pruned.ckpt #  path to the StableDiffusion v 2.1 weights
+  sync_path: ImageCodecWeights/diffeic/v2-1_512-ema-pruned.ckpt #  path to the StableDiffusion v 2.1 weights
   synch_control: true
   ckpt_path_pre: ~
   

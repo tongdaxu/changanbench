@@ -17,7 +17,7 @@ class MSILLMImageCodec(ImageCodecIface):
             torch_home_path = Path(torch_home)
             if not torch_home_path.is_absolute():
                 torch_home_path = Path(__file__).resolve().parents[2] / torch_home_path
-            os.environ["TORCH_HOME"] = str(torch_home_path)
+            # os.environ["TORCH_HOME"] = str(torch_home_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = torch.hub.load("facebookresearch/NeuralCompression", self.ckpt_name).to(self.device)
         self.model.eval()

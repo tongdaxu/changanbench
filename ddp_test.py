@@ -20,14 +20,14 @@ def parse_args(input_args=None):
     parser.add_argument("--mode", choices=["image", "video"], default="image")
     parser.add_argument("--image_codec_config", type=str, default="config/image_codecs",
                         help="codec config directory OR a single codec yaml file")
-    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets.yaml")
+    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets/kodak_dataset.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
     parser.add_argument("--config", type=str, default="", help="legacy video benchmark config yaml")
     parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets")
     parser.add_argument("--video_codec_config", type=str, default="config/video_codecs",
                         help="video codec config directory OR a single codec yaml file")
     parser.add_argument("--video_metric_config", type=str, default="config/video_metrics.yaml")
-    parser.add_argument("--cache_dir", type=str, default="./cache")
+    parser.add_argument("--cache_dir", type=str, default="./rec_cache")
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
     parser.add_argument('--image_size', type=int, default=256)

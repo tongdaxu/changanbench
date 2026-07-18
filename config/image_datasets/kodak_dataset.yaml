@@ -1,6 +1,6 @@
 kodak:
   type: cab.dataset.data.SimpleDataset
   params:
-    root: /NEW_EDS/JJ_Group/lisq/bsq-vit/kodak.txt
+    root: ImageDatasets/PhotoCD_PCD0992/
     image_size: 256
     zero_mean: null

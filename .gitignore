@@ -3,7 +3,7 @@ test.py
 ddp_test_ref.py
 Record.md
 __pycache__/
-cache
+rec_cache
 .vscode
 *.txt
 *.out

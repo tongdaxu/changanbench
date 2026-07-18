@@ -33,5 +33,27 @@ RUN $HOME/miniconda3/bin/conda create -y -n stablecodec python=3.10 && \
     $HOME/miniconda3/bin/conda run -n stablecodec pip install -r /tmp/requirements_stablecodec.txt \
     -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-WORKDIR /root
+COPY wheels/pyiqa-0.1.16-py3-none-any.whl \
+     /tmp/wheels/pyiqa-0.1.16-py3-none-any.whl
+
+RUN /root/miniconda3/bin/conda run --no-capture-output -n diffeic \
+    python -m pip install --no-deps \
+    /tmp/wheels/pyiqa-0.1.16-py3-none-any.whl
+
+COPY wheels/flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl /tmp/wheels/flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+
+RUN $HOME/miniconda3/bin/conda run -n infinity python -m pip install \
+    /tmp/wheels/flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY wheels/setuptools-81.0.0-py3-none-any.whl /tmp/wheels/setuptools-81.0.0-py3-none-any.whl
+
+RUN $HOME/miniconda3/bin/conda run -n illm python -m pip install /tmp/wheels/setuptools-81.0.0-py3-none-any.whl
+
+WORKDIR /root/changanbench
+
 CMD ["/bin/bash"]

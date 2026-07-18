@@ -3,6 +3,6 @@ msillm_q6:
   params:
     quality: 6
     ckpt_name: msillm_quality_5
-    torch_home: /data9-2/BenchmarkData/weights/msillm/torch_home
+    torch_home: ./cache/torch/
     dataset_zero_mean: false
     metrics_zero_mean: false

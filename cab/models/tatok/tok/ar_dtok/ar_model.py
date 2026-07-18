@@ -486,7 +486,7 @@ class ARModel(nn.Module):
     def from_checkpoint(cls, ckpt, load_state_dict=True):
         if isinstance(ckpt, str):
             assert os.path.exists(ckpt), f"checkpoint {ckpt} does not exist"
-            ckpt = torch.load(ckpt, map_location=lambda storage, loc: storage)
+            ckpt = torch.load(ckpt, map_location=lambda storage, loc: storage, weights_only=False,)
         else:
             assert isinstance(
                 ckpt, dict
