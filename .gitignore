@@ -17,8 +17,8 @@ cab/models/fsq/sd3unet_fsq_0.25bpp.yaml
 config/image_codecs/fsq_q2.yaml
 cab/codec/__pycache__
 experiments
-
-
+cache/
+rec_cache/
 TAppEncoderStatic_HMOriginal
 EncoderAppStatic_VTMOriginal
 
