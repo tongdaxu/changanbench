@@ -17,6 +17,7 @@ from cab.codec.external_video import ExternalVideoCodec, expand_project_path, na
 
 class BRHVCVideoCodec(ExternalVideoCodec):
     model_dir_name = "kwai_nvc"
+    artifact_dir_name = "brhvc"
 
     def __init__(
         self,

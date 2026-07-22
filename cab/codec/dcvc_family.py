@@ -137,7 +137,15 @@ class _DCVCSubprocessCodec(VideoCodecIface):
 
     def _run(self, cmd: list[str]) -> None:
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(self.family_dir) + os.pathsep + env.get("PYTHONPATH", "")
+        python_paths = [str(self.family_dir)]
+        artifact_root = os.environ.get("VIDEO_CODEC_ARTIFACT_ROOT")
+        if artifact_root:
+            artifact_dir = Path(artifact_root).expanduser() / self.family_dir_name
+            if artifact_dir.is_dir():
+                python_paths.append(str(artifact_dir))
+        if env.get("PYTHONPATH"):
+            python_paths.append(env["PYTHONPATH"])
+        env["PYTHONPATH"] = os.pathsep.join(python_paths)
         proc = subprocess.run(
             cmd,
             cwd=self.family_dir,

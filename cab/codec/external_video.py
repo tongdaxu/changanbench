@@ -20,6 +20,7 @@ class ExternalVideoCodec(VideoCodecIface):
     """Subprocess-backed adapter for vendored video codec projects."""
 
     model_dir_name: str = ""
+    artifact_dir_name: str = ""
     output_json_name: str = "metrics.json"
 
     def __init__(
@@ -109,13 +110,16 @@ class ExternalVideoCodec(VideoCodecIface):
 
     def _run(self, cmd: list[str]) -> None:
         env = os.environ.copy()
-        env["PYTHONPATH"] = (
-            str(project_root())
-            + os.pathsep
-            + str(self.model_dir)
-            + os.pathsep
-            + env.get("PYTHONPATH", "")
-        )
+        python_paths = [str(project_root()), str(self.model_dir)]
+        artifact_root = os.environ.get("VIDEO_CODEC_ARTIFACT_ROOT")
+        artifact_name = self.artifact_dir_name or self.model_dir_name
+        if artifact_root and artifact_name:
+            artifact_dir = Path(artifact_root).expanduser() / artifact_name
+            if artifact_dir.is_dir():
+                python_paths.append(str(artifact_dir))
+        if env.get("PYTHONPATH"):
+            python_paths.append(env["PYTHONPATH"])
+        env["PYTHONPATH"] = os.pathsep.join(python_paths)
         proc = subprocess.run(
             cmd,
             cwd=self.model_dir,

@@ -1,0 +1,23 @@
+name: dcvc_sdd
+
+channels:
+  - pytorch
+  - defaults
+
+dependencies:
+  - python=3.8
+  - pip
+  - pytorch=1.11.0
+  - torchvision=0.12.0
+  - torchaudio=0.11.0
+  - cudatoolkit=11.3
+  - pip:
+      - pip==23.3.1
+      - setuptools==68.2.2
+      - wheel==0.41.2
+      - numpy==1.23.5
+      - scipy==1.10.1
+      - matplotlib==3.3.4
+      - Pillow==9.5.0
+      - tqdm==4.66.1
+      - pytorch-msssim==0.2.0
