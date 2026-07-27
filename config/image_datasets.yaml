@@ -6,13 +6,13 @@
 #     image_size: 256
 #     zero_mean: null
 
-clic2020:
-  type: cab.dataset.data.SimpleDataset
-  params:
-    root: CLIC_2020.txt
-    # root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
-    image_size: 256
-    zero_mean: null
+# clic2020:
+#   type: cab.dataset.data.SimpleDataset
+#   params:
+#     root: CLIC_2020.txt
+#     # root: /NEW_EDS/JJ_Group/lisq/bsq-vit/CLIC_2020.txt
+#     image_size: 256
+#     zero_mean: null
 
 # imagenet_val:
 #   type: cab.dataset.data.SimpleDataset
@@ -20,3 +20,16 @@ clic2020:
 #     root: /NEW_EDS/xutd/common_datasets/imagenet/val/
 #     image_size: 512
 #     zero_mean: null
+
+company_full:
+  type: cab.dataset.enterprise_camera_image.CompanyImageDataset
+  params:
+    root: /data9-2/BenchmarkData/datasets/ImageDatasets/CLIC/
+    mode: full
+
+# company_patch512:
+#   type: cab.dataset.enterprise_camera_image.CompanyImageDataset
+#   params:
+#     root: /path/to/company_dataset
+#     mode: patch
+#     patch_size: 512

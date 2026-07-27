@@ -1,0 +1,7 @@
+company_patch:
+  type: cab.dataset.enterprise_camera_image.CompanyImageDataset
+  params:
+    root: ImageDatasets/PhotoCD_PCD0992/
+    zero_mean: null
+    mode: patch
+    patch_size: 256
