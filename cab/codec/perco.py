@@ -5,7 +5,12 @@ import os, sys
 # _perco_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "perco_src"))
 # if _perco_src not in sys.path:
 #     sys.path.insert(0, _perco_src)
-from cab.codec.abs import ImageCodecIface
+from cab.codec.abs import (
+    ImageCodecIface,
+    merge_image_patches,
+    patch_bits_to_image_bpp,
+    split_image_into_patches,
+)
 from cab.models.perco_src.config import ConfigPerco as cfg_perco
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from cab.models.perco_src.pipeline_sd_perco import StableDiffusionPipelinePerco
@@ -55,13 +60,6 @@ def compress_text(input_text):
     """Compress the input text to bytes using zlib."""
     input_bytes = input_text.encode('utf-8')
     return zlib.compress(input_bytes, level=zlib.Z_BEST_COMPRESSION)
-
-def calculate_bpp(compressed_data, num_pixels, bytes=True, num_bytes=None):
-    """Calculate bpp given the compressed text and number of pixels."""
-    scaling_factor = 8 if bytes else 1
-    if num_bytes:
-        return num_bytes * scaling_factor / num_pixels
-    return len(compressed_data) * scaling_factor / num_pixels
 
 class PerCoEncodeWrapper(torch.nn.Module):
     def __init__(self, pipe):
@@ -124,6 +122,8 @@ class PerCoVAEDecodeWrapper(torch.nn.Module):
         )[0]
 
 class PerCoImageCodec(ImageCodecIface):
+    PATCH_SIZE = 512
+
     def __init__(self, ckpt_path, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ckpt_path = ckpt_path
@@ -151,11 +151,42 @@ class PerCoImageCodec(ImageCodecIface):
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):
         # x: torch.Tensor, shape [B, C, H, W], range [0, 1]
-        B, C, H, W = x.shape
+        batch, channels, height, width = x.shape
+        patches = split_image_into_patches(x, self.PATCH_SIZE)
+        patches_per_image = patches.shape[1]
+        flat_patches = patches.reshape(
+            batch * patches_per_image,
+            channels,
+            self.PATCH_SIZE,
+            self.PATCH_SIZE,
+        )
+
+        reconstructed_patches, patch_bits = self._forward_patches(flat_patches)
+        reconstructed_patches = reconstructed_patches.reshape_as(patches)
+        xhat = merge_image_patches(
+            reconstructed_patches,
+            image_size=(height, width),
+        )
+        bpp = patch_bits_to_image_bpp(
+            patch_bits,
+            batch_size=batch,
+            patches_per_image=patches_per_image,
+            image_size=(height, width),
+        )
+        return xhat, bpp
+
+    @torch.no_grad()
+    def _forward_patches(self, x):
+        """Encode/decode 512x512 patches and return actual bits per patch."""
+        patch_batch, _, patch_height, patch_width = x.shape
+        if (patch_height, patch_width) != (self.PATCH_SIZE, self.PATCH_SIZE):
+            raise ValueError(
+                "PerCo patch input must be 512x512, got "
+                f"{patch_height}x{patch_width}."
+            )
+
         x_hat_list = []
-        bpp_text_list = []
-        bpp_hyper_latent_list = []
-        bpp_total_list = []
+        patch_bits_list = []
 
         self.pipe = self.pipe.to(self.device)
         self.pipe.vae = self.pipe.vae.to(self.device)
@@ -164,7 +195,7 @@ class PerCoImageCodec(ImageCodecIface):
         self.blip2 = self.blip2.to(self.device)
         # self.blip2.eval()
 
-        for i in range(B):
+        for i in range(patch_batch):
             img = x[i].unsqueeze(0).to(self.device)  # [1, C, H, W]
          
             # 1. Get image caption (BLIP 2)
@@ -175,7 +206,7 @@ class PerCoImageCodec(ImageCodecIface):
 
             # 2. Compress caption (zlib)
             byte_stream_text = compress_text(generated_text)
-            bpp_text = calculate_bpp(byte_stream_text, H * W)
+            text_bits = len(byte_stream_text) * 8
 
             # 3. Run VAE encoder
             latents = self.pipe.vae.to(self.device).encode((img * 2. - 1.)).latent_dist.sample()
@@ -188,32 +219,32 @@ class PerCoImageCodec(ImageCodecIface):
 
             # 5. Compress hyper-latent (AC)
             byte_stream_hyper_latent = compress_hyper_latent(z_hat_indices)
-            bpp_hyper_latent = calculate_bpp(byte_stream_hyper_latent, H * W)
-            bpp_total = bpp_text + bpp_hyper_latent
+            hyper_latent_bits = len(byte_stream_hyper_latent) * 8
 
             # 6. Generate reconstruction
             generator = None
             x_hat_img = self.pipe(
                 generated_text,
                 z_hat,
-                height=H,
-                width=W,
+                height=patch_height,
+                width=patch_width,
                 num_inference_steps=self.cfg_perco.num_inference_steps,
                 guidance_scale=self.cfg_perco.guidance_scale,
                 generator=generator
             ).images[0]
             x_hat_img = ToTensor()(x_hat_img)
             x_hat_list.append(x_hat_img.unsqueeze(0).to(self.device))
-            bpp_text_list.append(bpp_text)
-            bpp_hyper_latent_list.append(bpp_hyper_latent)
-            bpp_total_list.append(bpp_total)
+            patch_bits_list.append(text_bits + hyper_latent_bits)
 
-        # concat per-image reconstructions into a full-batch tensor
-        xhat = torch.cat(x_hat_list, dim=0)  # shape: (batch, C, H, W)
-        bpp = torch.tensor(bpp_total_list, dtype=torch.float32, device=self.device)  # shape: (batch,)
-        return xhat, bpp
+        xhat = torch.cat(x_hat_list, dim=0)
+        patch_bits = torch.tensor(
+            patch_bits_list,
+            dtype=torch.float32,
+            device=x.device,
+        )
+        return xhat, patch_bits
     
-    def fake_input(self, image_size=256, batch_size=1, device=None):
+    def fake_input(self, image_size=512, batch_size=1, device=None):
         if device is None:
             device = self.device
         return torch.rand(batch_size, 3, image_size, image_size, device=device)

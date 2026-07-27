@@ -25,11 +25,6 @@ company_full:
   type: cab.dataset.enterprise_camera_image.CompanyImageDataset
   params:
     root: /data9-2/BenchmarkData/datasets/ImageDatasets/CLIC/
-    mode: full
 
-# company_patch512:
-#   type: cab.dataset.enterprise_camera_image.CompanyImageDataset
-#   params:
-#     root: /path/to/company_dataset
-#     mode: patch
-#     patch_size: 512
+# Dataset-side patch mode is deprecated. Use company_full; codec-specific
+# tiling is configured and implemented by the codec.

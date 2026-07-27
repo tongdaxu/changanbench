@@ -1,7 +1,12 @@
 import torch
 import os
 import numpy as np
-from cab.codec.abs import ImageCodecIface
+from cab.codec.abs import (
+    ImageCodecIface,
+    merge_image_patches,
+    patch_bits_to_image_bpp,
+    split_image_into_patches,
+)
 from omegaconf import OmegaConf
 from cab.models.bsq import config as config_utils
 import torch.cuda.amp as amp
@@ -36,6 +41,8 @@ class BSQFullWrapper(torch.nn.Module):
         return xhat
 
 class BSQImageTokenizer(ImageCodecIface):
+    PATCH_SIZE = 256
+
     def __init__(self, quality, ckpt_path, config_path, bits_per_token, downsample_factor, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality
@@ -64,15 +71,55 @@ class BSQImageTokenizer(ImageCodecIface):
 
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):
+        batch, channels, height, width = x.shape
+        patches = split_image_into_patches(x, self.PATCH_SIZE)
+        patches_per_image = patches.shape[1]
+        flat_patches = patches.reshape(
+            batch * patches_per_image,
+            channels,
+            self.PATCH_SIZE,
+            self.PATCH_SIZE,
+        )
+
         with amp.autocast(enabled=not self.bsq_config.optimizer.disable_amp, dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16):
-                        xhat, _, info = self.model(x)
-        xhat = xhat.to(torch.float32)
-        # Calculate bpp based on the number of tokens and image size
-        bits_per_token = self.bits_per_token
-        num_tokens = (x.size(2) // self.downsample_factor) * (x.size(3) // self.downsample_factor)
-        bpp = (num_tokens * bits_per_token) / (x.size(2) * x.size(3))
-        
-        return xhat, torch.tensor([bpp], dtype=torch.float32, device=x.device)
+            reconstructed_patches, _, info = self.model(flat_patches)
+        reconstructed_patches = reconstructed_patches.to(torch.float32)
+
+        indices = info.get("indices") if isinstance(info, dict) else None
+        if isinstance(indices, torch.Tensor):
+            if indices.shape[0] != flat_patches.shape[0]:
+                raise RuntimeError(
+                    "BSQ token indices do not preserve the patch batch "
+                    f"dimension: got {tuple(indices.shape)} for "
+                    f"{flat_patches.shape[0]} patches."
+                )
+            tokens_per_patch = indices.reshape(indices.shape[0], -1).shape[1]
+        else:
+            # Compatibility fallback for older BSQ model variants that do not
+            # expose indices. This matches the configured encoder token grid.
+            tokens_per_patch = (
+                self.PATCH_SIZE // self.downsample_factor
+            ) ** 2
+
+        patch_bits = torch.full(
+            (flat_patches.shape[0],),
+            float(tokens_per_patch * self.bits_per_token),
+            dtype=torch.float32,
+            device=x.device,
+        )
+        reconstructed_patches = reconstructed_patches.reshape_as(patches)
+        xhat = merge_image_patches(
+            reconstructed_patches,
+            image_size=(height, width),
+        )
+        bpp = patch_bits_to_image_bpp(
+            patch_bits,
+            batch_size=batch,
+            patches_per_image=patches_per_image,
+            image_size=(height, width),
+        )
+
+        return xhat, bpp
 
 
     def fake_input(self, image_size=256, batch_size=1, device=None):

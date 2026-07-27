@@ -6,6 +6,7 @@ from cab.utils import instantiate_from_config
 import argparse
 import numpy as np
 from tqdm import tqdm
+from torch.utils.data._utils.collate import default_collate
 from cab.utils import inject_codec_zero_means
 import cab.distributed as dist_utils
 from cab.evaluations.video_ddp import (
@@ -20,7 +21,7 @@ def parse_args(input_args=None):
     parser.add_argument("--mode", choices=["image", "video"], default="image")
     parser.add_argument("--image_codec_config", type=str, default="config/image_codecs",
                         help="codec config directory OR a single codec yaml file")
-    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets/company_patch.yaml")
+    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets/company_full.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
     parser.add_argument("--config", type=str, default="", help="legacy video benchmark config yaml")
     parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets")
@@ -31,7 +32,15 @@ def parse_args(input_args=None):
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
     parser.add_argument('--image_size', type=int, default=256)
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=1,
+        help=(
+            "company images may have different cropped resolutions; use 1 "
+            "unless every image in each batch has the same shape"
+        ),
+    )
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--local-rank', type=int, default=None)
     parser.add_argument('--seed', type=int, default=42)
@@ -58,44 +67,28 @@ def create_data_loader(dataset, batch_size, num_workers):
         num_workers=num_workers,
         sampler=sampler,
         drop_last=False,
+        collate_fn=_collate_without_resize_or_padding,
     )
     
     return data_loader
 
-def reconstruct_from_patch(
-        patches,
-        meta):
-    """
-    patches:
-
-    B,N,C,H,W
-
-    output:
-
-    B,C,H,W
-
-    """
-    B,N,C,ph,pw=patches.shape
-    gw=meta["grid_w"][0].item()
-    gh=meta["grid_h"][0].item()
-    canvas=torch.zeros(
-        B,
-        C,
-        gh*ph,
-        gw*pw,
-        device=patches.device
-    )
-    idx=0
-    for y in range(gh):
-        for x in range(gw):
-            canvas[
-                :,
-                :,
-                y*ph:(y+1)*ph,
-                x*pw:(x+1)*pw
-            ]=patches[:,idx]
-            idx+=1
-    return canvas
+def _collate_without_resize_or_padding(samples):
+    """Collate equal-sized samples and explain variable-resolution failures."""
+    try:
+        return default_collate(samples)
+    except RuntimeError as exc:
+        image_shapes = [
+            tuple(sample["img"].shape)
+            for sample in samples
+            if isinstance(sample, dict) and isinstance(sample.get("img"), torch.Tensor)
+        ]
+        if len(set(image_shapes)) > 1:
+            raise ValueError(
+                "Cannot batch company images with different cropped shapes "
+                f"{image_shapes}. No resize or padding is applied; run with "
+                "--batch_size 1."
+            ) from exc
+        raise
 
 def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
     t = t.detach().cpu()
@@ -392,40 +385,18 @@ def main():
             with torch.no_grad():
                 max_save = 3
                 for batch in data_loader:
-                    # img = batch["img"].cuda()
-                    if batch["mode"][0]=="full":
-                        img=batch["img"].cuda()
-                    else:
-                        img=batch["patches"].cuda()
-                    # rec, bpp = codec(img)
-                    if batch["mode"][0]=="patch":
-                        B,N,C,H,W = img.shape
-                        img_input = img.reshape(
-                            B*N,
-                            C,
-                            H,
-                            W
+                    img = batch["img"].cuda()
+                    rec, bpp = codec(img)
+                    if rec.shape != img.shape:
+                        raise RuntimeError(
+                            f"Codec {cname!r} changed image shape from "
+                            f"{tuple(img.shape)} to {tuple(rec.shape)}."
                         )
-                        rec_patch,bpp = codec(
-                            img_input
+                    if not torch.isfinite(rec).all():
+                        raise RuntimeError(
+                            f"Codec {cname!r} returned a reconstruction "
+                            "containing NaN or Inf."
                         )
-                        rec_patch=rec_patch.reshape(
-                            B,
-                            N,
-                            C,
-                            H,
-                            W
-                        )
-                        rec = reconstruct_from_patch(
-                            rec_patch,
-                            batch["meta"]
-                        )
-                        img = reconstruct_from_patch(
-                            img,
-                            batch["meta"]
-                        )
-                    else:
-                        rec,bpp=codec(img)
                     if cname =='hific_q0' or cname == 'hific_q2':
                         img = (img + 1.) / 2
                     for i in range(min(img.shape[0], max_save)):
@@ -437,10 +408,21 @@ def main():
 
                     
                     # Handle bpp
-                    if isinstance(bpp, torch.Tensor):
-                        bpp_tensor = bpp.cuda()
-                    else:
-                        bpp_tensor = torch.full((img.shape[0],), float(bpp), dtype=torch.float32, device=img.device)
+                    bpp_tensor = torch.as_tensor(
+                        bpp,
+                        dtype=torch.float32,
+                        device=img.device,
+                    ).reshape(-1)
+                    if bpp_tensor.numel() != img.shape[0]:
+                        raise RuntimeError(
+                            f"Codec {cname!r} must return one BPP per complete "
+                            f"image: expected {img.shape[0]}, got "
+                            f"{bpp_tensor.numel()}."
+                        )
+                    if not torch.isfinite(bpp_tensor).all():
+                        raise RuntimeError(
+                            f"Codec {cname!r} returned BPP containing NaN or Inf."
+                        )
                     
                     # Gather BPP from all ranks
                     gathered_bpp = [torch.zeros_like(bpp_tensor) for _ in range(world_size)]

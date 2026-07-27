@@ -3,4 +3,3 @@ company_full:
   params:
     root: ImageDatasets/PhotoCD_PCD0992/
     zero_mean: null
-    mode: full

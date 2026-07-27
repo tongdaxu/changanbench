@@ -154,3 +154,28 @@ The framework supports:
 - Extensible metric registration
 - Extensible dataset registration
 - Unified image and video benchmarking workflows
+
+### Company image evaluation
+
+`ddp_test_for_company.py` evaluates complete company images through the same
+codec interface:
+
+```python
+reconstruction, bpp = codec(image)
+```
+
+The company dataset reads RGB images and center-crops each dimension down to a
+multiple of 512. It never resizes, pads, or creates model patches. JPEG receives
+the complete cropped image; BSQ and PerCo perform non-overlapping tiling
+internally at 256 and 512 pixels respectively, then reconstruct the complete
+cropped shape and return one BPP value per complete image.
+
+Use `--batch_size 1` for variable-resolution data (it is the company script
+default). A larger batch is accepted only when all images in that batch have
+the same shape; mismatched shapes produce an explicit error instead of being
+silently resized or padded. Use
+`config/image_datasets/company_full.yaml`. The legacy
+`config/image_datasets/company_patch.yaml` file is retained only as a
+deprecation notice and is not an instantiable dataset configuration.
+Other codecs have not been given implicit tiling behavior and must be validated
+for complete, variable-resolution inputs before company evaluation.

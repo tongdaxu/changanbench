@@ -1,7 +1,10 @@
-company_patch:
-  type: cab.dataset.enterprise_camera_image.CompanyImageDataset
-  params:
-    root: ImageDatasets/PhotoCD_PCD0992/
-    zero_mean: null
-    mode: patch
-    patch_size: 256
+# Deprecated configuration notice.
+#
+# Company image evaluation no longer has a dataset-side patch mode. Use:
+#
+#   config/image_datasets/company_full.yaml
+#
+# This file intentionally contains no instantiable dataset definition so that
+# scanning config/image_datasets/ does not evaluate the company dataset twice.
+deprecated: true
+replacement: config/image_datasets/company_full.yaml
