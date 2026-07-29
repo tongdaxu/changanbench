@@ -2,11 +2,14 @@ from pathlib import Path
 from PIL import Image
 import torch
 import numpy as np
+import warnings
 from torch.utils.data import Dataset
 import torchvision.transforms.v2 as transforms
 
 
 class CompanyImageDataset(Dataset):
+
+    CROP_MULTIPLE = 512
 
     IMG_EXTS = [
         ".jpg",
@@ -21,17 +24,19 @@ class CompanyImageDataset(Dataset):
         root,
         zero_mean=None,
         mode="full",
-        patch_size=512
+        patch_size=512,
+        crop_multiple=None
     ):
 
         self.root = Path(root)
         self.mode = mode
         self.patch_size = patch_size
+        self.crop_multiple = self.CROP_MULTIPLE
         self.zero_mean = zero_mean
         if self.zero_mean:
             self.transform = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 
-        self.files = sorted(
+        files = sorted(
             [
                 x for x in self.root.rglob("*")
                 if x.suffix.lower()
@@ -39,7 +44,32 @@ class CompanyImageDataset(Dataset):
             ]
         )
 
-        assert len(self.files)>0
+        self.files = []
+        skipped_files = []
+        for path in files:
+            with Image.open(path) as img:
+                w, h = img.size
+            if w < self.crop_multiple or h < self.crop_multiple:
+                skipped_files.append(path)
+            else:
+                self.files.append(path)
+
+        if skipped_files:
+            max_examples = 5
+            examples = ", ".join(str(path) for path in skipped_files[:max_examples])
+            remaining = len(skipped_files) - max_examples
+            suffix = f", and {remaining} more" if remaining > 0 else ""
+            warnings.warn(
+                f"Skipped {len(skipped_files)} image(s) with width or height smaller "
+                f"than crop_multiple={self.crop_multiple}. Examples: {examples}{suffix}",
+                stacklevel=2,
+            )
+
+        if not self.files:
+            raise ValueError(
+                f"No usable images found under {self.root}: images must have width and "
+                f"height greater than or equal to crop_multiple={self.crop_multiple}."
+            )
 
 
 
@@ -55,32 +85,14 @@ class CompanyImageDataset(Dataset):
                  .convert("RGB")
         img=self.center_crop_multiple(
             img,
-            self.patch_size
+            self.crop_multiple
         )
-
-        
-
-        if self.mode=="full":
-            tensor=self.to_tensor(img)
-            tensor=self.transform(tensor) if self.zero_mean else tensor
-            return {
-                "img":tensor,
-                "path":str(path),
-                "mode":"full"
-
-            }
-
-        elif self.mode=="patch":
-            patches,meta=self.make_patches(
-                img
-            )
-            patches=self.transform(patches) if self.zero_mean else patches
-            return {
-                "patches":patches,
-                "path":str(path),
-                "mode":"patch",
-                "meta":meta
-            }
+        tensor=self.to_tensor(img)
+        tensor=self.transform(tensor) if self.zero_mean else tensor
+        return {
+            "img":tensor,
+            "path":str(path)
+        }
 
 
 
@@ -108,59 +120,6 @@ class CompanyImageDataset(Dataset):
                 top+new_h
             )
         )
-
-
-
-    ##################################
-    # split 512 patches
-    ##################################
-
-    def make_patches(
-            self,
-            img):
-        w,h=img.size
-        nx=w//self.patch_size
-        ny=h//self.patch_size
-
-        patches=[]
-
-        for y in range(ny):
-            for x in range(nx):
-                patch=img.crop(
-                    (
-                        x*self.patch_size,
-                        y*self.patch_size,
-                        (x+1)*self.patch_size,
-                        (y+1)*self.patch_size
-                    )
-                )
-
-                patches.append(
-                    self.to_tensor(
-                        patch
-                    )
-                )
-
-
-        patches=torch.stack(
-            patches,
-            dim=0
-        )
-
-
-        meta={
-            "grid_w":nx,
-            "grid_h":ny,
-            "height":h,
-            "width":w
-
-        }
-
-
-        return patches,meta
-
-
-
 
     ##################################
 

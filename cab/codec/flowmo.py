@@ -5,6 +5,7 @@ from cab.models.flowmo import train_utils
 from omegaconf import OmegaConf
 from cab.complexity import params_m, time_ms, gflops
 from cab.models.flowmo.models import prepare_idxs
+from cab.codec.patch_utils import forward_image_in_patches
 
 class FlowMoEncodeWrapper(torch.nn.Module):
     def __init__(self, model):
@@ -63,12 +64,20 @@ class FlowMoImageTokenizer(ImageCodecIface):
 
 
     @torch.no_grad()
-    def forward(self, x, *args, **kwargs):
+    def _forward_one_patch(self, x):
         x = x.to(self.device)
         dtype_to_use = torch.bfloat16 if train_utils.bfloat16_is_available() else torch.float32
         xhat = self.model.reconstruct(x, dtype=dtype_to_use)
         bpp =self.codebook_size_for_entropy * self.code_length / (x.shape[2] * x.shape[3])
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x, *args, **kwargs):
+        return forward_image_in_patches(
+            x,
+            patch_size=256,
+            forward_patch=self._forward_one_patch,
+        )
 
     def encode_params_m(self):
         modules = [self.model.encoder]

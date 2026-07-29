@@ -6,6 +6,7 @@ from cab.models.var.models import build_vae_var
 import os.path as osp
 from pathlib import Path
 from cab.complexity import params_m, time_ms, gflops
+from cab.codec.patch_utils import forward_image_in_patches
 
 
 def _project_path(path):
@@ -101,7 +102,7 @@ class VARImageTokenizer(ImageCodecIface):
         self.model = vae.eval()
 
     @torch.no_grad()
-    def forward(self, x):
+    def _forward_one_patch(self, x):
         x = x.to(self.device, dtype=torch.float)
         
         xhat = self.model.img_to_reconstructed_img(x, last_one=True)
@@ -116,6 +117,14 @@ class VARImageTokenizer(ImageCodecIface):
         bpp = total_bits / (x.shape[2] * x.shape[3])
         
         return xhat, torch.tensor([bpp], dtype=torch.float32, device=x.device)
+
+    @torch.no_grad()
+    def forward(self, x):
+        return forward_image_in_patches(
+            x,
+            patch_size=256,
+            forward_patch=self._forward_one_patch,
+        )
 
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:

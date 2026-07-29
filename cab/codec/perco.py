@@ -17,6 +17,7 @@ import contextlib
 import io
 
 from cab.complexity import params_m, time_ms, gflops
+from cab.codec.patch_utils import forward_image_in_patches
 
 @contextlib.contextmanager
 def suppress_output():
@@ -149,69 +150,62 @@ class PerCoImageCodec(ImageCodecIface):
         
 
     @torch.no_grad()
-    def forward(self, x, *args, **kwargs):
-        # x: torch.Tensor, shape [B, C, H, W], range [0, 1]
-        B, C, H, W = x.shape
-        x_hat_list = []
-        bpp_text_list = []
-        bpp_hyper_latent_list = []
-        bpp_total_list = []
-
+    def _forward_one_patch(self, x):
+        _, _, H, W = x.shape
         self.pipe = self.pipe.to(self.device)
         self.pipe.vae = self.pipe.vae.to(self.device)
         self.pipe.hyper_enc = self.pipe.hyper_enc.to(self.device)
         self.pipe.hyper_enc.quantizer = self.pipe.hyper_enc.quantizer.to(self.device)
         self.blip2 = self.blip2.to(self.device)
-        # self.blip2.eval()
+        img = x.to(self.device)
 
-        for i in range(B):
-            img = x[i].unsqueeze(0).to(self.device)  # [1, C, H, W]
-         
-            # 1. Get image caption (BLIP 2)
-            inputs = self.processor(images=img[0] * 255, return_tensors="pt").to(self.device)
+        # 1. Get image caption (BLIP 2)
+        inputs = self.processor(images=img[0] * 255, return_tensors="pt").to(self.device)
 
-            generated_ids = self.blip2.generate(**inputs, max_length=self.cfg_perco.max_number_tokens)
-            generated_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        generated_ids = self.blip2.generate(**inputs, max_length=self.cfg_perco.max_number_tokens)
+        generated_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
-            # 2. Compress caption (zlib)
-            byte_stream_text = compress_text(generated_text)
-            bpp_text = calculate_bpp(byte_stream_text, H * W)
+        # 2. Compress caption (zlib)
+        byte_stream_text = compress_text(generated_text)
+        bpp_text = calculate_bpp(byte_stream_text, H * W)
 
-            # 3. Run VAE encoder
-            latents = self.pipe.vae.to(self.device).encode((img * 2. - 1.)).latent_dist.sample()
-            latents = latents * self.pipe.vae.config.scaling_factor
+        # 3. Run VAE encoder
+        latents = self.pipe.vae.to(self.device).encode((img * 2. - 1.)).latent_dist.sample()
+        latents = latents * self.pipe.vae.config.scaling_factor
 
-            # 4. Run hyper-encoder
-            self.pipe.hyper_enc.quantizer.eval()
-            hyper_latent = self.pipe.hyper_enc(latents)
-            z_hat, z_hat_indices = hyper_latent.z_hat, hyper_latent.indices
+        # 4. Run hyper-encoder
+        self.pipe.hyper_enc.quantizer.eval()
+        hyper_latent = self.pipe.hyper_enc(latents)
+        z_hat, z_hat_indices = hyper_latent.z_hat, hyper_latent.indices
 
-            # 5. Compress hyper-latent (AC)
-            byte_stream_hyper_latent = compress_hyper_latent(z_hat_indices)
-            bpp_hyper_latent = calculate_bpp(byte_stream_hyper_latent, H * W)
-            bpp_total = bpp_text + bpp_hyper_latent
+        # 5. Compress hyper-latent (AC)
+        byte_stream_hyper_latent = compress_hyper_latent(z_hat_indices)
+        bpp_hyper_latent = calculate_bpp(byte_stream_hyper_latent, H * W)
+        bpp_total = bpp_text + bpp_hyper_latent
 
-            # 6. Generate reconstruction
-            generator = None
-            x_hat_img = self.pipe(
-                generated_text,
-                z_hat,
-                height=H,
-                width=W,
-                num_inference_steps=self.cfg_perco.num_inference_steps,
-                guidance_scale=self.cfg_perco.guidance_scale,
-                generator=generator
-            ).images[0]
-            x_hat_img = ToTensor()(x_hat_img)
-            x_hat_list.append(x_hat_img.unsqueeze(0).to(self.device))
-            bpp_text_list.append(bpp_text)
-            bpp_hyper_latent_list.append(bpp_hyper_latent)
-            bpp_total_list.append(bpp_total)
-
-        # concat per-image reconstructions into a full-batch tensor
-        xhat = torch.cat(x_hat_list, dim=0)  # shape: (batch, C, H, W)
-        bpp = torch.tensor(bpp_total_list, dtype=torch.float32, device=self.device)  # shape: (batch,)
+        # 6. Generate reconstruction
+        generator = None
+        x_hat_img = self.pipe(
+            generated_text,
+            z_hat,
+            height=H,
+            width=W,
+            num_inference_steps=self.cfg_perco.num_inference_steps,
+            guidance_scale=self.cfg_perco.guidance_scale,
+            generator=generator
+        ).images[0]
+        x_hat_img = ToTensor()(x_hat_img)
+        xhat = x_hat_img.unsqueeze(0).to(self.device)
+        bpp = torch.tensor([bpp_total], dtype=torch.float32, device=self.device)
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x, *args, **kwargs):
+        return forward_image_in_patches(
+            x,
+            patch_size=512,
+            forward_patch=self._forward_one_patch,
+        )
     
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:

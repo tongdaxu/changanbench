@@ -10,6 +10,7 @@ from cab.codec.abs import ImageCodecIface
 from cab.models.ibq.src.IBQ.models.ibqgan import IBQ
 import yaml
 from cab.complexity import params_m, time_ms, gflops
+from cab.codec.patch_utils import forward_image_in_patches
 
 ## for different model configuration
 MODEL_TYPE = {
@@ -75,7 +76,7 @@ class IBQImageTokenizer(ImageCodecIface):
 
 
     @torch.no_grad()
-    def forward(self, x, *args, **kwargs):
+    def _forward_one_patch(self, x):
 
         x = x.to(self.device, dtype=torch.float)
         quant, qloss, (_, _, indices) = self.model.encode(x)
@@ -87,6 +88,14 @@ class IBQImageTokenizer(ImageCodecIface):
         bpp = torch.tensor([bpp], dtype=torch.float32, device=x.device)
 
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x, *args, **kwargs):
+        return forward_image_in_patches(
+            x,
+            patch_size=256,
+            forward_patch=self._forward_one_patch,
+        )
     
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:

@@ -10,6 +10,7 @@ from cab.complexity import (
     gflops,
     time_ms,
 )
+from cab.codec.patch_utils import forward_image_in_patches
 
 class SSDDEncodeWrapper(torch.nn.Module):
     def __init__(self, ssdd_model):
@@ -51,7 +52,7 @@ class SSDDImageTokenizer(ImageCodecIface):
         self.model.eval()
 
     @torch.no_grad()
-    def forward(self, x, *args, **kwargs):
+    def _forward_one_patch(self, x):
         x = x.to(self.device, dtype=torch.float)
 
         posterior = self.model.encode(x)
@@ -63,6 +64,14 @@ class SSDDImageTokenizer(ImageCodecIface):
         bpp = kl / (x.shape[2] * x.shape[3]) / np.log(2)
 
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x, *args, **kwargs):
+        return forward_image_in_patches(
+            x,
+            patch_size=256,
+            forward_patch=self._forward_one_patch,
+        )
     
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:

@@ -6,6 +6,7 @@ from huggingface_hub import hf_hub_download
 from pathlib import Path
 from cab.models.tatok.t2i_inference import T2IConfig, TextToImageInference
 from cab.complexity import params_m, time_ms, gflops
+from cab.codec.patch_utils import forward_image_in_patches
 
 
 def _project_path(path):
@@ -114,7 +115,7 @@ class TaTokImageTokenizer(ImageCodecIface):
         self.model = TextToImageInference(config)
 
     @torch.no_grad()
-    def forward(self, x):
+    def _forward_one_patch(self, x):
         x = x.to(self.device)
         indices = self.model.visual_tokenizer.get_encoder_indices((x + 1.0) / 2.0)
         rec = self.model.visual_tokenizer.decode_from_encoder_indices(indices).to(torch.float32) / 255.0 # reconstruction
@@ -127,6 +128,14 @@ class TaTokImageTokenizer(ImageCodecIface):
         bpp = self.seq_length * bits_per_token / (x.size(2) * x.size(3))
         bpp = torch.tensor([bpp], dtype=torch.float32, device=x.device)
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x):
+        return forward_image_in_patches(
+            x,
+            patch_size=256,
+            forward_patch=self._forward_one_patch,
+        )
     
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:
