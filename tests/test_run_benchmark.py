@@ -167,7 +167,7 @@ def test_dataset_root_override_does_not_modify_source(tmp_path):
     assert override.parent == (tmp_path / "output" / "config").resolve()
 
 
-def test_dry_run_creates_per_model_artifacts_and_summaries(tmp_path):
+def test_dry_run_creates_per_model_artifacts_and_summaries(tmp_path, capsys):
     args = _args(tmp_path, ["bsq_q0", "jpeg_q22"], dry_run=True)
 
     def unexpected_subprocess(*args, **kwargs):
@@ -181,6 +181,19 @@ def test_dry_run_creates_per_model_artifacts_and_summaries(tmp_path):
         assert (tmp_path / "output/cache" / model).is_dir()
     assert (tmp_path / "output/benchmark.csv").is_file()
     assert (tmp_path / "output/benchmark.md").is_file()
+    output = capsys.readouterr().out
+    assert f"Output directory: {(tmp_path / 'output').resolve()}" in output
+    assert "Models: 2" in output
+    assert "GPU: 0" in output
+    assert "[1/2] START bsq_q0 | env=illm" in output
+    assert f"log: {(tmp_path / 'output/logs/bsq_q0.log').resolve()}" in output
+    assert "[1/2] DRY-RUN bsq_q0" in output
+    assert "$ CUDA_VISIBLE_DEVICES=0 conda run -n illm torchrun" in output
+    assert "Completed: 2" in output
+    assert "Success: 0" in output
+    assert "Failed: 0" in output
+    assert f"Results: {(tmp_path / 'output/benchmark.csv').resolve()}" in output
+    assert f"Markdown: {(tmp_path / 'output/benchmark.md').resolve()}" in output
 
 
 def test_dry_run_uses_infinity_for_tatok_and_infinity(tmp_path):
@@ -197,7 +210,7 @@ def test_dry_run_uses_infinity_for_tatok_and_infinity(tmp_path):
         assert "conda run -n infinity torchrun" in log
 
 
-def test_failure_continues_to_next_model(tmp_path):
+def test_failure_continues_to_next_model(tmp_path, capsys):
     args = _args(tmp_path, ["bsq_q0", "jpeg_q22"])
     calls = []
 
@@ -214,9 +227,16 @@ def test_failure_continues_to_next_model(tmp_path):
     assert [row["status"] for row in rows] == ["failed", "success"]
     assert rows[0]["return_code"] == 9
     assert "first model failed" in rows[0]["error_summary"]
+    output = capsys.readouterr().out
+    assert "[1/2] FAILED bsq_q0 | exit_code=9 | elapsed=" in output
+    assert f"log: {(tmp_path / 'output/logs/bsq_q0.log').resolve()}" in output
+    assert "[2/2] SUCCESS jpeg_q22 | elapsed=" in output
+    assert "Completed: 2" in output
+    assert "Success: 1" in output
+    assert "Failed: 1" in output
 
 
-def test_resume_reuses_successful_json(tmp_path):
+def test_resume_reuses_successful_json(tmp_path, capsys):
     args = _args(tmp_path, ["bsq_q0"], resume=True)
     result_path = tmp_path / "output/json/bsq_q0.json"
     result_path.parent.mkdir(parents=True)
@@ -241,9 +261,15 @@ def test_resume_reuses_successful_json(tmp_path):
     assert "Reused successful result" in (
         tmp_path / "output/logs/bsq_q0.log"
     ).read_text(encoding="utf-8")
+    output = capsys.readouterr().out
+    assert "[1/1] START bsq_q0 | env=illm" in output
+    assert "[1/1] SKIP bsq_q0 | existing successful result" in output
+    assert "Completed: 1" in output
+    assert "Success: 1" in output
+    assert "Failed: 0" in output
 
 
-def test_csv_aggregation_uses_json_metrics_and_complexity(tmp_path):
+def test_csv_aggregation_uses_json_metrics_and_complexity(tmp_path, capsys):
     args = _args(tmp_path, ["jpeg_q22"])
 
     def fake_run(command, **kwargs):
@@ -264,3 +290,9 @@ def test_csv_aggregation_uses_json_metrics_and_complexity(tmp_path):
     assert csv_rows[0]["bpp"] == "0.25"
     assert csv_rows[0]["ms_ssim"] == "0.96"
     assert csv_rows[0]["parameters_m"] == "3.0"
+    output = capsys.readouterr().out
+    assert "[1/1] START jpeg_q22 | env=illm" in output
+    assert "[1/1] SUCCESS jpeg_q22 | elapsed=" in output
+    assert "Completed: 1" in output
+    assert "Success: 1" in output
+    assert "Failed: 0" in output

@@ -8,6 +8,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
@@ -438,9 +439,16 @@ def run_benchmarks(
     if not metric_config.is_file():
         raise ValueError(f"Metric config does not exist: {metric_config}")
 
+    print(f"Output directory: {output_dir}", flush=True)
+    print(f"Dataset config: {dataset_config}", flush=True)
+    print(f"Models: {len(models)}", flush=True)
+    print(f"GPU: {args.gpu}", flush=True)
+
     rows = []
     stopped = False
-    for model in models:
+    total_models = len(models)
+    for model_index, model in enumerate(models, start=1):
+        progress = f"[{model_index}/{total_models}]"
         result_json = json_dir / f"{model.name}.json"
         log_path = log_dir / f"{model.name}.log"
         cache_dir = cache_root / model.name
@@ -457,6 +465,12 @@ def run_benchmarks(
             conda_executable=args.conda_executable,
         )
         command_text = _command_text(command, args.gpu)
+        started_at = time.perf_counter()
+        print(
+            f"{progress} START {model.name} | env={model.environment}",
+            flush=True,
+        )
+        print(f"log: {log_path}", flush=True)
 
         if stopped:
             payload = make_scheduler_result(
@@ -472,6 +486,7 @@ def run_benchmarks(
                 encoding="utf-8",
             )
             rows.append(result_to_row(payload, model, dataset_name))
+            print(f"{progress} SKIP {model.name} | fail-fast triggered", flush=True)
             continue
 
         existing = load_json(result_json) if args.resume else None
@@ -491,6 +506,10 @@ def run_benchmarks(
             with log_path.open("a", encoding="utf-8", newline="\n") as handle:
                 handle.write("[resume] Reused successful result JSON.\n")
             rows.append(result_to_row(existing, model, dataset_name))
+            print(
+                f"{progress} SKIP {model.name} | existing successful result",
+                flush=True,
+            )
             continue
 
         if args.dry_run:
@@ -500,6 +519,8 @@ def run_benchmarks(
             write_json(result_json, payload)
             log_path.write_text(command_text + "\n", encoding="utf-8")
             rows.append(result_to_row(payload, model, dataset_name))
+            print(f"{progress} DRY-RUN {model.name}", flush=True)
+            print(f"$ {command_text}", flush=True)
             continue
 
         result_json.unlink(missing_ok=True)
@@ -535,6 +556,11 @@ def run_benchmarks(
             payload["error_summary"] = None
             payload["command"] = command
             write_json(result_json, payload)
+            elapsed = time.perf_counter() - started_at
+            print(
+                f"{progress} SUCCESS {model.name} | elapsed={elapsed:.1f}s",
+                flush=True,
+            )
         else:
             summary = _error_summary(log_path)
             if return_code == 0:
@@ -554,10 +580,28 @@ def run_benchmarks(
             write_json(result_json, payload)
             if args.fail_fast:
                 stopped = True
+            elapsed = time.perf_counter() - started_at
+            print(
+                f"{progress} FAILED {model.name} | "
+                f"exit_code={return_code} | elapsed={elapsed:.1f}s",
+                flush=True,
+            )
+            print(f"log: {log_path}", flush=True)
 
         rows.append(result_to_row(payload, model, dataset_name))
 
     write_summaries(output_dir, rows)
+    print(f"Completed: {len(rows)}", flush=True)
+    print(
+        f"Success: {sum(row['status'] == 'success' for row in rows)}",
+        flush=True,
+    )
+    print(
+        f"Failed: {sum(row['status'] == 'failed' for row in rows)}",
+        flush=True,
+    )
+    print(f"Results: {output_dir / 'benchmark.csv'}", flush=True)
+    print(f"Markdown: {output_dir / 'benchmark.md'}", flush=True)
     return rows
 
 
