@@ -1,8 +1,36 @@
 import torch
 import os, sys
-_ibq_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "ibq"))
+from contextlib import contextmanager
+
+_ibq_src = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "models", "ibq")
+)
+_repo_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
 if sys.path.insert(0, _ibq_src):
     pass
+
+
+def _resolve_repo_path(path):
+    """Resolve benchmark paths independently of the current working directory."""
+    if os.path.isabs(path):
+        return path
+    return os.path.abspath(os.path.join(_repo_root, path))
+
+
+@contextmanager
+def _working_directory(path):
+    """Temporarily satisfy IBQ's upstream cwd-relative resource paths."""
+    previous = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
+
+
 import numpy as np
 from omegaconf import OmegaConf
 from cab.codec.abs import ImageCodecIface
@@ -62,16 +90,24 @@ def load_vqgan_new(config, model_type, ckpt_path=None, is_gumbel=False):
 class IBQImageTokenizer(ImageCodecIface):
     def __init__(self, ckpt_path, ibq_config, codebook_size, downsample_factor, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ckpt_path = ckpt_path
+        self.ckpt_path = _resolve_repo_path(ckpt_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.codebook_size = codebook_size
         self.downsample_factor = downsample_factor
 
-        config_model = load_config(ibq_config, display=False)
-        model = load_vqgan_new(config_model, model_type="IBQ", ckpt_path=ckpt_path).to(self.device) #please specify your own path here
+        config_path = _resolve_repo_path(ibq_config)
+        config_model = load_config(config_path, display=False)
+
+        # IBQ upstream resolves LPIPS resources relative to its project root.
+        with _working_directory(_ibq_src):
+            model = load_vqgan_new(
+                config_model,
+                model_type="IBQ",
+                ckpt_path=self.ckpt_path,
+            ).to(self.device)
 
         model = model.cuda()
-        model.load_state_dict(torch.load(ckpt_path)["state_dict"])
+        model.load_state_dict(torch.load(self.ckpt_path)["state_dict"])
         self.model = model.eval()
 
 
