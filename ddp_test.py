@@ -1,4 +1,5 @@
 import torch.distributed as dist
+import json
 import os
 import torch
 from omegaconf import OmegaConf
@@ -11,7 +12,6 @@ import cab.distributed as dist_utils
 from cab.evaluations.video_ddp import (
     adapt_metric_for_video,
     gather_dataset_metric,
-    print_dataset_metric,
     save_reconstruction_preview,
 )
 
@@ -35,6 +35,12 @@ def parse_args(input_args=None):
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--local-rank', type=int, default=None)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument(
+        "--result-json",
+        type=str,
+        default=None,
+        help="Optional rank-0 JSON output path for aggregated benchmark results.",
+    )
     parser.add_argument('--dist-url', default='env://', type=str,
                         help='url used to set up distributed training')
     if input_args is not None:
@@ -74,6 +80,86 @@ def _module_device(module):
     if param is not None:
         return param.device
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _json_compatible(value):
+    if value is None or isinstance(value, (str, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_compatible(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_compatible(item) for item in value]
+    if isinstance(value, torch.Tensor):
+        if value.numel() == 1:
+            value = value.detach().cpu().item()
+        else:
+            return _json_compatible(value.detach().cpu().tolist())
+    if isinstance(value, np.ndarray):
+        if value.size == 1:
+            value = value.item()
+        else:
+            return _json_compatible(value.tolist())
+    if isinstance(value, (np.integer, int)):
+        return int(value)
+    if isinstance(value, (np.floating, float)):
+        number = float(value)
+        return number if np.isfinite(number) else None
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return str(value)
+    return number if np.isfinite(number) else None
+
+
+def _write_result_json(path, results):
+    output_path = os.path.abspath(path)
+    parent = os.path.dirname(output_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+    if len(results) == 1:
+        payload = dict(results[0])
+        payload["status"] = "success"
+    else:
+        payload = {
+            "status": "success",
+            "results": results,
+        }
+
+    temporary_path = output_path + ".tmp"
+    with open(temporary_path, "w", encoding="utf-8") as handle:
+        json.dump(
+            _json_compatible(payload),
+            handle,
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        handle.write("\n")
+    os.replace(temporary_path, output_path)
+
+
+def _empty_image_metrics():
+    return {
+        "psnr": None,
+        "ssim": None,
+        "ms_ssim": None,
+        "lpips": None,
+        "dists": None,
+        "fid": None,
+    }
+
+
+def _empty_complexity():
+    return {
+        "encode_params_m": None,
+        "decode_params_m": None,
+        "encode_time_ms": None,
+        "decode_time_ms": None,
+        "encode_gflops": None,
+        "decode_gflops": None,
+    }
+
 
 def load_config_files(dataset_config_path, metric_config_path, codec_config_path, resolve=True):
     """Load and merge configs.
@@ -285,6 +371,7 @@ def main():
     datasets_name = config['datasets']
     codecs_name = config['codecs']
     metrics_name = config['metrics']
+    benchmark_results = []
 
     codecs = []
     
@@ -455,6 +542,8 @@ def main():
             
             # Aggregate and compute statistics on rank 0
             if rank == 0:
+                result_metrics = _empty_image_metrics()
+                result_complexity = _empty_complexity()
                 print(f"\n{'='*60}")
                 print(f"Results: {cname} on {dname}")
                 print(f"{'='*60}")
@@ -463,10 +552,18 @@ def main():
                 for j in range(world_size):
                     bpp_results[j] = torch.cat(bpp_results[j], dim=0).numpy()
                 bpp_flat = np.concatenate(bpp_results, axis=0)[:total_num]
-                print(f"BPP: {np.mean(bpp_flat):.4f}") 
+                bpp_mean = float(np.mean(bpp_flat))
+                print(f"BPP: {bpp_mean:.4f}")
                 for mname, metric in metrics:
                     if getattr(metric, "is_complexity_metric", False):
                         print(metric.format_result())
+                        complexity_value = complexity_outputs.get(mname)
+                        if isinstance(complexity_value, dict):
+                            for key in result_complexity:
+                                if key in complexity_value:
+                                    result_complexity[key] = _json_compatible(
+                                        complexity_value[key]
+                                    )
 
                 # Process metrics
                 for mname in metric_results.keys():
@@ -482,8 +579,10 @@ def main():
                     for j in range(total_num):
                         metric_reorg.append(metric_results[mname][j % world_size][j // world_size])
                     metric_array = np.vstack(metric_reorg)
-                    
-                    print(f"{mname:12s}: {np.mean(metric_array):.4f} (±{np.std(metric_array):.4f})")
+                    metric_mean = float(np.mean(metric_array))
+                    print(f"{mname:12s}: {metric_mean:.4f} (±{np.std(metric_array):.4f})")
+                    result_name = "ms_ssim" if mname == "msssim" else str(mname)
+                    result_metrics[result_name] = metric_mean
                 
                 for mname, metric in metrics:
                     if mname == 'fid':
@@ -494,13 +593,34 @@ def main():
                         from cab.evaluations.fid.get_fid import compute_fid_from_activations
                         fid_score = compute_fid_from_activations(all_pred_x, all_pred_xr)
                         print(f"{'fid':12s}: {fid_score:.4f}")
+                        result_metrics["fid"] = float(fid_score)
                     elif mname in dataset_metric_gathered:
-                        print_dataset_metric(mname, metric, dataset_metric_gathered[mname])
+                        if hasattr(metric, "compute_ddp_result"):
+                            dataset_value = metric.compute_ddp_result(
+                                dataset_metric_gathered[mname]
+                            )
+                            print(f"{mname:12s}: {dataset_value:.4f}")
+                            result_metrics[str(mname)] = _json_compatible(
+                                dataset_value
+                            )
+
+                benchmark_results.append(
+                    {
+                        "codec": str(cname),
+                        "dataset": str(dname),
+                        "bpp": bpp_mean,
+                        "metrics": result_metrics,
+                        "complexity": result_complexity,
+                    }
+                )
                 
                 print(f"{'='*60}\n")
             
             dist.barrier()
     
+    if dist_utils.get_rank() == 0 and args.result_json:
+        _write_result_json(args.result_json, benchmark_results)
+
     dist.destroy_process_group()
 
 
