@@ -8,6 +8,7 @@ from cab.models.MLICPlusPlus.models import *
 from cab.models.MLICPlusPlus.utils.testing import compress_one_image, decompress_one_image
 from cab.complexity import params_m, time_ms, gflops
 from cab.models.MLICPlusPlus.utils.ckbd import ckbd_split, ckbd_anchor, ckbd_nonanchor
+from cab.codec.runtime_paths import prepare_mlicplusplus_stream_dir
 
 class MLICPPEncodeFLOPsWrapper(torch.nn.Module):
     def __init__(self, model):
@@ -227,7 +228,7 @@ class MLICPPDecodeFLOPsWrapper(torch.nn.Module):
         return x_hat
 
 class MLICPlusPlusImageCodec(ImageCodecIface):
-    def __init__(self, quality, ckpt_path, *args, **kwargs):
+    def __init__(self, quality, ckpt_path, runtime_dir=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality
         self.ckpt_path = ckpt_path
@@ -249,9 +250,9 @@ class MLICPlusPlusImageCodec(ImageCodecIface):
             fixed_state[new_k] = v
         self.model.load_state_dict(fixed_state)
         epoch = checkpoint["epoch"]
-        self.save_dir = os.path.join('./experiments', 'codestream', '%02d' % (epoch + 1))
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        self.save_dir = str(
+            prepare_mlicplusplus_stream_dir(runtime_dir, epoch)
+        )
 
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):

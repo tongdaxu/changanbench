@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from cab.utils import inject_codec_zero_means
+from cab.codec.runtime_paths import inject_codec_runtime_dir
 import cab.distributed as dist_utils
 from cab.evaluations.video_ddp import (
     adapt_metric_for_video,
@@ -379,6 +380,7 @@ def main():
         # create a resolved dict copy, inject codec-specific zero_mean flags, then back to OmegaConf
         cfg_dict = OmegaConf.to_container(config, resolve=False)
         cfg_dict = inject_codec_zero_means(cfg_dict, cname)
+        cfg_dict = inject_codec_runtime_dir(cfg_dict, cname, args.cache_dir)
         cfg = OmegaConf.create(cfg_dict)
 
         # instantiate codec for this iteration

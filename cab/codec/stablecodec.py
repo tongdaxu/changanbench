@@ -9,6 +9,7 @@ from pathlib import Path
 from cab.models.stablecodec_src.my_utils.compress_utils import write_body, read_body, filesize
 from types import SimpleNamespace
 from cab.complexity import params_m, time_ms, gflops
+from cab.codec.runtime_paths import prepare_stablecodec_paths
 
 def compress_one_image(net, bin_path, ori_h, ori_w, img_name, x):
     with torch.no_grad():
@@ -154,15 +155,27 @@ class StableCodecVAEDecodeWrapper(torch.nn.Module):
         ).sample
 
 class StableCodecImageCodec(ImageCodecIface):
-    def __init__(self, sd_path, elic_path, codec_path, rec_path, bin_path, *args, **kwargs):
+    def __init__(
+        self,
+        sd_path,
+        elic_path,
+        codec_path,
+        rec_path=None,
+        bin_path=None,
+        runtime_dir=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.sd_path = sd_path
         self.elic_path = elic_path
         self.codec_path = codec_path
-        self.rec_path = rec_path
-        self.bin_path = bin_path
-        os.makedirs(self.rec_path, exist_ok=True)
-        os.makedirs(self.bin_path, exist_ok=True)
+        reconstruction_dir, bitstream_dir = prepare_stablecodec_paths(
+            runtime_dir
+        )
+        self.runtime_dir = str(reconstruction_dir.parent)
+        self.rec_path = str(reconstruction_dir)
+        self.bin_path = str(bitstream_dir)
         default_args = dict(
         sd_path=self.sd_path,
         elic_path=self.elic_path,

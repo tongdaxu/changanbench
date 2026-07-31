@@ -8,6 +8,12 @@ import pytest
 import yaml
 
 import run_benchmark
+from cab.codec.runtime_paths import (
+    inject_codec_runtime_dir,
+    prepare_hific_log_path,
+    prepare_mlicplusplus_stream_dir,
+    prepare_stablecodec_paths,
+)
 
 
 REPO_ROOT = Path(run_benchmark.__file__).resolve().parent
@@ -165,6 +171,64 @@ def test_dataset_root_override_does_not_modify_source(tmp_path):
     data = yaml.safe_load(override.read_text(encoding="utf-8"))
     assert data["sample"]["params"]["root"] == "/data/company/images"
     assert override.parent == (tmp_path / "output" / "config").resolve()
+
+
+def test_read_only_codec_runtime_paths_stay_under_cache_dir(tmp_path):
+    cache_dir = tmp_path / "model-cache"
+    codec_configs = {
+        "MLIC++_q0": ("MLIC++_q0.yaml", "mlicplusplus"),
+        "hific_q0": ("hific_q0.yaml", "hific"),
+        "stablecodec_q0": ("stablecodec_q0.yaml", "stablecodec"),
+    }
+
+    for codec_name, (config_name, subdir) in codec_configs.items():
+        config = yaml.safe_load(
+            (REPO_ROOT / "config/image_codecs" / config_name).read_text(
+                encoding="utf-8"
+            )
+        )
+        inject_codec_runtime_dir(config, codec_name, cache_dir)
+        assert Path(config[codec_name]["params"]["runtime_dir"]) == (
+            cache_dir.resolve() / subdir
+        )
+
+    mlic_dir = prepare_mlicplusplus_stream_dir(
+        cache_dir / "mlicplusplus",
+        epoch=4,
+    )
+    hific_log = prepare_hific_log_path(cache_dir / "hific")
+    stable_rec, stable_bin = prepare_stablecodec_paths(
+        cache_dir / "stablecodec"
+    )
+
+    assert mlic_dir == cache_dir.resolve() / "mlicplusplus/codestream/05"
+    assert mlic_dir.is_dir()
+    assert hific_log == cache_dir.resolve() / "hific/hific.log"
+    assert hific_log.parent.is_dir()
+    assert stable_rec == cache_dir.resolve() / "stablecodec/reconstructions"
+    assert stable_bin == cache_dir.resolve() / "stablecodec/bitstreams"
+    assert stable_rec.is_dir()
+    assert stable_bin.is_dir()
+
+    written_files = [
+        mlic_dir / "sample.bin",
+        hific_log,
+        stable_rec / "sample.png",
+        stable_bin / "sample.bin",
+    ]
+    for path in written_files:
+        path.write_bytes(b"runtime-test")
+        assert path.is_file()
+        assert path.is_relative_to(cache_dir.resolve())
+
+    unrelated = {
+        "jpeg_q22": {
+            "type": "cab.codec.jpeg.JPEGImageCodec",
+            "params": {"quality": 22},
+        }
+    }
+    inject_codec_runtime_dir(unrelated, "jpeg_q22", cache_dir)
+    assert "runtime_dir" not in unrelated["jpeg_q22"]["params"]
 
 
 def test_dry_run_creates_per_model_artifacts_and_summaries(tmp_path, capsys):
