@@ -199,6 +199,114 @@ ENV DCVC_PYTHON=/root/miniconda3/envs/dcvc/bin/python \
     VIDEO_CODEC_ARTIFACT_ROOT=/opt/video_codec_artifacts \
     SUPPRESS_CUSTOM_KERNEL_WARNING=1
 
+# ============ Traditional video codecs: H.264 / H.265 / H.266 ============
+ARG FFMPEG_VERSION=8.1.2
+ARG X265_VERSION=4.2
+ARG VVENC_VERSION=1.14.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bzip2 \
+    build-essential \
+    cmake \
+    curl \
+    nasm \
+    ninja-build \
+    pkg-config \
+    xz-utils \
+    yasm \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# H.264 / x264
+RUN mkdir -p /tmp/codec-build/x264 && \
+    curl -Lf https://code.videolan.org/videolan/x264/-/archive/master/x264-stable.tar.bz2 \
+      | tar -jx --strip-components=1 -C /tmp/codec-build/x264 && \
+    cd /tmp/codec-build/x264 && \
+    ./configure \
+      --prefix=/usr/local \
+      --disable-static \
+      --enable-shared \
+      --enable-pic \
+      --disable-cli \
+      --disable-opencl && \
+    make -j"$(nproc)" && \
+    make install
+
+# H.265 / x265. Existing CAB configs use 8-bit yuv420p, so a regular 8-bit
+# build is sufficient; x265 multilib is not needed here.
+RUN mkdir -p /tmp/codec-build/x265 && \
+    curl -Lf "https://bitbucket.org/multicoreware/x265_git/downloads/x265_${X265_VERSION}.tar.gz" \
+      | tar -xz --strip-components=1 -C /tmp/codec-build/x265 && \
+    cmake -S /tmp/codec-build/x265/source -B /tmp/codec-build/x265/build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DENABLE_SHARED=ON \
+      -DENABLE_CLI=OFF && \
+    cmake --build /tmp/codec-build/x265/build && \
+    cmake --install /tmp/codec-build/x265/build
+
+# H.266 / VVenC encoder
+RUN mkdir -p /tmp/codec-build/vvenc && \
+    curl -Lf "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v${VVENC_VERSION}.tar.gz" \
+      | tar -xz --strip-components=1 -C /tmp/codec-build/vvenc && \
+    cmake -S /tmp/codec-build/vvenc -B /tmp/codec-build/vvenc/build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DBUILD_SHARED_LIBS=ON \
+      -DVVENC_LIBRARY_ONLY=ON && \
+    cmake --build /tmp/codec-build/vvenc/build && \
+    cmake --install /tmp/codec-build/vvenc/build && \
+    ldconfig
+
+# A single FFmpeg build exposes all three encoders and the native VVC decoder.
+RUN mkdir -p /tmp/codec-build/ffmpeg && \
+    curl -Lf "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" \
+      | tar -xJ --strip-components=1 -C /tmp/codec-build/ffmpeg && \
+    cd /tmp/codec-build/ffmpeg && \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig \
+      ./configure \
+      --prefix=/usr/local \
+      --extra-cflags=-I/usr/local/include \
+      --extra-ldflags=-L/usr/local/lib \
+      --extra-ldflags=-L/usr/local/lib64 \
+      --enable-gpl \
+      --enable-libx264 \
+      --enable-libx265 \
+      --enable-libvvenc \
+      --enable-zlib \
+      --disable-debug \
+      --disable-doc \
+      --disable-ffplay \
+      --disable-ffprobe && \
+    make -j"$(nproc)" && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/codec-build
+
+ENV FFMPEG_PATH=/usr/local/bin/ffmpeg \
+    LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:${LD_LIBRARY_PATH}
+
+# Match the repository-relative path used by config/video_codecs/h*.yaml.
+RUN mkdir -p /root/changanbench/tools/ffmpeg/bin && \
+    ln -sf /usr/local/bin/ffmpeg /root/changanbench/tools/ffmpeg/bin/ffmpeg
+
+# Fail the image build if any encoder, the VVC decoder, or a library is absent.
+RUN ffmpeg -hide_banner -encoders 2>/dev/null | grep -E 'libx264|libx265|libvvenc' && \
+    ffmpeg -hide_banner -decoders 2>/dev/null | grep -E '[[:space:]]vvc[[:space:]]' && \
+    ! ldd /usr/local/bin/ffmpeg | grep 'not found'
+
+# End-to-end smoke test for all three codecs.
+RUN ffmpeg -v error -f lavfi -i testsrc2=size=128x128:rate=1 -frames:v 2 \
+      -c:v libx264 -preset ultrafast -pix_fmt yuv420p /tmp/h264.mp4 && \
+    ffmpeg -v error -i /tmp/h264.mp4 -f null - && \
+    ffmpeg -v error -f lavfi -i testsrc2=size=128x128:rate=1 -frames:v 2 \
+      -c:v libx265 -preset ultrafast -pix_fmt yuv420p /tmp/h265.mp4 && \
+    ffmpeg -v error -i /tmp/h265.mp4 -f null - && \
+    ffmpeg -v error -f lavfi -i testsrc2=size=128x128:rate=1 -frames:v 2 \
+      -c:v libvvenc -preset faster -qp 32 -pix_fmt yuv420p10le /tmp/h266.mkv && \
+    ffmpeg -v error -i /tmp/h266.mkv -f null - && \
+    rm /tmp/h264.mp4 /tmp/h265.mp4 /tmp/h266.mkv
+
 WORKDIR /root/changanbench
 
 CMD ["/bin/bash"]
