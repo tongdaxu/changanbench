@@ -7,3 +7,6 @@ Pillow
 pytorch-msssim
 torch
 torchvision
+
+# VLM semantic output consistency metrics
+sentence-transformers

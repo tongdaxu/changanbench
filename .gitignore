@@ -55,3 +55,9 @@ scripts/
 scripts/*
 
 AGENTS.md
+
+# VLM evaluation local artifacts
+*.py[cod]
+.venv/
+/cab/evaluations/vlm/output/
+/cab/evaluations/vlm/models/

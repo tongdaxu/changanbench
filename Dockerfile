@@ -309,4 +309,24 @@ RUN ffmpeg -v error -f lavfi -i testsrc2=size=128x128:rate=1 -frames:v 2 \
 
 WORKDIR /root/changanbench
 
+# VLM output consistency evaluation (isolated like the other CAB environments).
+COPY requirements.txt /tmp/requirements_vlm.txt
+RUN /root/miniconda3/bin/conda create -y -n vlm python=3.10 && \
+    /root/miniconda3/bin/conda run -n vlm python -m pip install \
+    torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124 && \
+    /root/miniconda3/bin/conda run -n vlm python -m pip install \
+    -r /tmp/requirements_vlm.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# Copy only the evaluation package; no VLM weights are downloaded at build time.
+COPY cab/__init__.py /opt/cab-vlm/cab/__init__.py
+COPY cab/evaluations/__init__.py cab/evaluations/abs.py /opt/cab-vlm/cab/evaluations/
+COPY cab/evaluations/vlm/ /opt/cab-vlm/cab/evaluations/vlm/
+RUN cd /opt/cab-vlm && \
+    /root/miniconda3/bin/conda run --no-capture-output -n vlm \
+    python -m pip check && \
+    /root/miniconda3/bin/conda run --no-capture-output -n vlm \
+    python -c "import sentence_transformers; from cab.evaluations.vlm.metric import VLMMetric" && \
+    /root/miniconda3/bin/conda run --no-capture-output -n vlm \
+    python -m cab.evaluations.vlm --help
+
 CMD ["/bin/bash"]
