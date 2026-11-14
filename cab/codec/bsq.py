@@ -64,15 +64,46 @@ class BSQImageTokenizer(ImageCodecIface):
 
     @torch.no_grad()
     def forward(self, x, *args, **kwargs):
+        if x.dim() != 4:
+            raise ValueError(f"BSQ expects input with shape [B, C, H, W], got {tuple(x.shape)}")
+
+        batch_size, channels, height, width = x.shape
+        patch_size = 256
+        if height % patch_size != 0 or width % patch_size != 0:
+            raise ValueError(
+                f"BSQ input height and width must be multiples of {patch_size}, "
+                f"got {height}x{width}"
+            )
+
+        grid_h = height // patch_size
+        grid_w = width // patch_size
+        patches_per_image = grid_h * grid_w
+        patches = (
+            x.reshape(batch_size, channels, grid_h, patch_size, grid_w, patch_size)
+            .permute(0, 2, 4, 1, 3, 5)
+            .reshape(batch_size * patches_per_image, channels, patch_size, patch_size)
+        )
+
         with amp.autocast(enabled=not self.bsq_config.optimizer.disable_amp, dtype=torch.bfloat16 if self.bsq_config.optimizer.use_bf16 else torch.float16):
-                        xhat, _, info = self.model(x)
-        xhat = xhat.to(torch.float32)
-        # Calculate bpp based on the number of tokens and image size
-        bits_per_token = self.bits_per_token
-        num_tokens = (x.size(2) // self.downsample_factor) * (x.size(3) // self.downsample_factor)
-        bpp = (num_tokens * bits_per_token) / (x.size(2) * x.size(3))
-        
-        return xhat, torch.tensor([bpp], dtype=torch.float32, device=x.device)
+            xhat, _, info = self.model(patches)
+        xhat = (
+            xhat.to(torch.float32)
+            .reshape(batch_size, grid_h, grid_w, channels, patch_size, patch_size)
+            .permute(0, 3, 1, 4, 2, 5)
+            .reshape(batch_size, channels, height, width)
+        )
+
+        tokens_per_patch = (patch_size // self.downsample_factor) ** 2
+        bits_per_image = patches_per_image * tokens_per_patch * self.bits_per_token
+        bpp_per_image = bits_per_image / (height * width)
+        bpp = torch.full(
+            (batch_size,),
+            float(bpp_per_image),
+            dtype=torch.float32,
+            device=x.device,
+        )
+
+        return xhat, bpp
 
 
     def fake_input(self, image_size=256, batch_size=1, device=None):

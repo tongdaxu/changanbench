@@ -4,3 +4,4 @@ company_full:
     root: ImageDatasets/PhotoCD_PCD0992/
     zero_mean: null
     mode: full
+    crop_multiple: 512

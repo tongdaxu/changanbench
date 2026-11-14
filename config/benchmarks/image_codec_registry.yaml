@@ -1,0 +1,142 @@
+version: 1
+
+default_suite:
+  - bsq_q0
+  - fsq_q0
+  - jpeg_q22
+  - var_q0
+  - flowmo_q0
+  - ssdd_q0
+  - ibq_q0
+  - perco_q0
+  - tatok_q0
+  - infinity_q0
+
+models:
+  - name: jpeg_q22
+    family: JPEG
+    codec_config: config/image_codecs/jpeg_q22.yaml
+    environment: illm
+    enabled: true
+
+  - name: hm_q22
+    family: HM
+    codec_config: config/image_codecs/hm_q22.yaml
+    environment: illm
+    enabled: true
+    note: Requires the HM binaries under ImageCodecWeights/hm.
+
+  - name: vtm_q22
+    family: VTM
+    codec_config: config/image_codecs/vtm_q22.yaml
+    environment: illm
+    enabled: true
+    note: Requires the VTM binaries under ImageCodecWeights/vtm.
+
+  - name: elic_q0
+    family: ELIC
+    codec_config: config/image_codecs/elic_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: tcm_q0
+    family: TCM
+    codec_config: config/image_codecs/tcm_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: MLIC++_q0
+    family: MLIC++
+    codec_config: config/image_codecs/MLIC++_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: hific_q0
+    family: HiFiC
+    codec_config: config/image_codecs/hific_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: msillm_q0
+    family: MS-ILLM
+    codec_config: config/image_codecs/msillm_q0.yaml
+    environment: illm
+    enabled: true
+    note: Requires a populated Torch Hub cache for facebookresearch/NeuralCompression.
+
+  - name: diffeic_q0
+    family: DiffEIC
+    codec_config: config/image_codecs/diffeic_q0.yaml
+    environment: diffeic
+    enabled: true
+    note: Current company-image forward expects dimensions divisible by 512.
+
+  - name: stablecodec_q0
+    family: StableCodec
+    codec_config: config/image_codecs/stablecodec_q0.yaml
+    environment: stablecodec
+    enabled: true
+
+  - name: perco_q0
+    family: PerCo
+    codec_config: config/image_codecs/perco_q0.yaml
+    environment: illm
+    enabled: true
+    note: Current company-image forward expects dimensions divisible by 512.
+
+  - name: fsq_q0
+    family: FSQ
+    codec_config: config/image_codecs/fsq_q0.yaml
+    environment: illm
+    enabled: true
+    note: Current company-image forward expects dimensions divisible by 512.
+
+  - name: bsq_q0
+    family: BSQ
+    codec_config: config/image_codecs/bsq_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: var_q0
+    family: VAR
+    codec_config: config/image_codecs/var_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: tatok_q0
+    family: TA-Tok
+    codec_config: config/image_codecs/tatok_q0.yaml
+    environment: infinity
+    enabled: true
+    note: Machine 9 validation confirmed TA-Tok requires infinity; illm lacks Siglip2VisionConfig.
+
+  - name: infinity_q0
+    family: Infinity
+    codec_config: config/image_codecs/infinity_q0.yaml
+    environment: infinity
+    enabled: true
+    note: Current company-image forward expects dimensions divisible by 512.
+
+  - name: cosmos_discrete_q0
+    family: Cosmos
+    codec_config: config/image_codecs/cosmos_discrete_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: ibq_q0
+    family: IBQ
+    codec_config: config/image_codecs/ibq_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: flowmo_q0
+    family: FlowMo
+    codec_config: config/image_codecs/flowmo_q0.yaml
+    environment: illm
+    enabled: true
+
+  - name: ssdd_q0
+    family: SSDD
+    codec_config: config/image_codecs/ssdd_q0.yaml
+    environment: illm
+    enabled: true

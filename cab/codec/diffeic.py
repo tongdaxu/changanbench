@@ -10,6 +10,7 @@ from typing import List, Tuple
 from contextlib import contextmanager
 
 from cab.complexity import params_m, time_ms
+from cab.codec.patch_utils import forward_image_in_patches
 
 try:
     from fvcore.nn import FlopCountAnalysis
@@ -193,12 +194,20 @@ class DiffEICImageCodec(ImageCodecIface):
 
 
     @torch.no_grad()
-    def forward(self, x, *args, **kwargs):
+    def _forward_one_patch(self, x):
         xhat, bpp = process(
             self.model, x, steps=self.steps, sampler=self.sampler
         )
 
         return xhat, bpp
+
+    @torch.no_grad()
+    def forward(self, x, *args, **kwargs):
+        return forward_image_in_patches(
+            x,
+            patch_size=512,
+            forward_patch=self._forward_one_patch,
+        )
     
     def fake_input(self, image_size=256, batch_size=1, device=None):
         if device is None:

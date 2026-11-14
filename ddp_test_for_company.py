@@ -20,7 +20,7 @@ def parse_args(input_args=None):
     parser.add_argument("--mode", choices=["image", "video"], default="image")
     parser.add_argument("--image_codec_config", type=str, default="config/image_codecs",
                         help="codec config directory OR a single codec yaml file")
-    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets/company_patch.yaml")
+    parser.add_argument("--image_dataset_config", type=str, default="config/image_datasets/company_full.yaml")
     parser.add_argument("--image_metric_config", type=str, default="config/image_metrics.yaml")
     parser.add_argument("--config", type=str, default="", help="legacy video benchmark config yaml")
     parser.add_argument("--video_dataset_config", type=str, default="config/video_datasets")
@@ -31,7 +31,7 @@ def parse_args(input_args=None):
     parser.add_argument('--log_dir', type=str, default="./logs")
     parser.add_argument('--img_path', type=str, default=None)
     parser.add_argument('--image_size', type=int, default=256)
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--local-rank', type=int, default=None)
     parser.add_argument('--seed', type=int, default=42)
@@ -61,41 +61,6 @@ def create_data_loader(dataset, batch_size, num_workers):
     )
     
     return data_loader
-
-def reconstruct_from_patch(
-        patches,
-        meta):
-    """
-    patches:
-
-    B,N,C,H,W
-
-    output:
-
-    B,C,H,W
-
-    """
-    B,N,C,ph,pw=patches.shape
-    gw=meta["grid_w"][0].item()
-    gh=meta["grid_h"][0].item()
-    canvas=torch.zeros(
-        B,
-        C,
-        gh*ph,
-        gw*pw,
-        device=patches.device
-    )
-    idx=0
-    for y in range(gh):
-        for x in range(gw):
-            canvas[
-                :,
-                :,
-                y*ph:(y+1)*ph,
-                x*pw:(x+1)*pw
-            ]=patches[:,idx]
-            idx+=1
-    return canvas
 
 def _ensure_1d_cpu(t: torch.Tensor) -> torch.Tensor:
     t = t.detach().cpu()
@@ -392,40 +357,8 @@ def main():
             with torch.no_grad():
                 max_save = 3
                 for batch in data_loader:
-                    # img = batch["img"].cuda()
-                    if batch["mode"][0]=="full":
-                        img=batch["img"].cuda()
-                    else:
-                        img=batch["patches"].cuda()
-                    # rec, bpp = codec(img)
-                    if batch["mode"][0]=="patch":
-                        B,N,C,H,W = img.shape
-                        img_input = img.reshape(
-                            B*N,
-                            C,
-                            H,
-                            W
-                        )
-                        rec_patch,bpp = codec(
-                            img_input
-                        )
-                        rec_patch=rec_patch.reshape(
-                            B,
-                            N,
-                            C,
-                            H,
-                            W
-                        )
-                        rec = reconstruct_from_patch(
-                            rec_patch,
-                            batch["meta"]
-                        )
-                        img = reconstruct_from_patch(
-                            img,
-                            batch["meta"]
-                        )
-                    else:
-                        rec,bpp=codec(img)
+                    img = batch["img"].cuda()
+                    rec, bpp = codec(img)
                     if cname =='hific_q0' or cname == 'hific_q2':
                         img = (img + 1.) / 2
                     for i in range(min(img.shape[0], max_save)):

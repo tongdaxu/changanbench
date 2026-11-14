@@ -3,5 +3,4 @@ company_patch:
   params:
     root: ImageDatasets/PhotoCD_PCD0992/
     zero_mean: null
-    mode: patch
-    patch_size: 256
+    crop_multiple: 512

@@ -7,19 +7,24 @@ from cab.models.hific_src.helpers import utils
 from cab.models.hific_src.default_config import ModelModes
 from collections import defaultdict
 from cab.complexity import params_m, time_ms
+from cab.codec.runtime_paths import prepare_hific_log_path
 
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
 
 class HiFiCImageCodec(ImageCodecIface):
-    def __init__(self, quality, ckpt_path, *args, **kwargs):
+    def __init__(self, quality, ckpt_path, runtime_dir=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quality = quality
         self.ckpt_path = ckpt_path
 
         self.device = utils.get_device()
-        self.logger = utils.logger_setup(logpath=os.path.join('logs'), filepath=os.path.abspath(__file__))
+        self.log_path = str(prepare_hific_log_path(runtime_dir))
+        self.logger = utils.logger_setup(
+            logpath=self.log_path,
+            filepath=os.path.abspath(__file__),
+        )
         ckpt = torch.load(self.ckpt_path, map_location=self.device)
         model_args = ckpt['args']
         model_args = Struct(**model_args)  
